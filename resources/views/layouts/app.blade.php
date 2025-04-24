@@ -132,9 +132,7 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('login') }}">Login</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('register') }}">Register</a>
-                            </li>
+                            
                         @else
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
@@ -181,18 +179,25 @@
         </div>
     </nav>
 
-    <div class="container mt-4">
-        @if(session('success'))
-            <div class="alert alert-success">
-                <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                @yield('sidebar')
             </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+            <div class="col-md-9">
+                @if(session('success'))
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+                    </div>
+                @endif
+                @yield('content')
             </div>
-        @endif
-        @yield('content')
+        </div>
     </div>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

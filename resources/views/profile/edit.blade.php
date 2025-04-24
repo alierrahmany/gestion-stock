@@ -3,6 +3,13 @@
 @section('content')
 <div class="container py-4">
     <div class="row justify-content-center">
+        @if(auth()->user()->role === 'admin')
+            @include('admin.partials.admin-sidebar')
+        @elseif(auth()->user()->role === 'gestionnaire')
+        @include('gestionnaire.partials.sidebar_gestionnaire')
+        @else
+            @include('magasin.partials.sidebar')
+        @endif
         <div class="col-md-8">
              
             <div class="card shadow-sm border-0">

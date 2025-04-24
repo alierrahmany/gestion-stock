@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\User;
 
 class DashboardController extends Controller
@@ -12,7 +13,7 @@ class DashboardController extends Controller
         $userCounts = [
             'admin' => User::where('role', 'admin')->count(),
             'gestionnaire' => User::where('role', 'gestionnaire')->count(),
-            'magasin' => User::where('role', 'magasin')->count()
+            'magasin' => User::where('role', 'magasin')->count(),
         ];
 
         return view('admin.dashboard', compact('userCounts'));

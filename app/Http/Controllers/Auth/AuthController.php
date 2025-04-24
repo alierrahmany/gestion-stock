@@ -22,27 +22,27 @@ class AuthController extends Controller
      * Handle login request
      */
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+{
+    $credentials = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
+    if (Auth::attempt($credentials)) {
+        $request->session()->regenerate();
 
-            if (Auth::user()->isAdmin()) {
-                return redirect()->route('admin.dashboard');
-            } elseif (Auth::user()->isGestionnaire()) {
-                return redirect()->route('manager.dashboard');
-            }
-            return redirect()->route('magasin.dashboard');
+        if (Auth::user()->isAdmin()) {
+            return redirect()->intended(route('admin.dashboard'));
+        } elseif (Auth::user()->isGestionnaire()) {
+            return redirect()->intended(route('gestionnaire.dashboard'));
         }
-
-        return back()->withErrors([
-            'email' => 'Invalid credentials',
-        ]);
+        return redirect()->intended(route('magasin.dashboard'));
     }
+
+    return back()->withErrors([
+        'email' => 'Invalid credentials',
+    ]);
+}
 
    
 

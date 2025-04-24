@@ -3,10 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
+use App\Http\Controllers\gestionnaire\DashboardController as GestionnaireDashboardController;
 use App\Http\Controllers\Magasin\DashboardController as UserDashboardController;
 use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SalesController;
+use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\InvoicesController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -26,13 +33,10 @@ Route::middleware(['auth', 'magasin'])->group(function () {
 });
 
 // Manager Routes
-Route::prefix('manager')->middleware(['auth', 'gestionnaire'])->group(function () {
-    Route::get('/dashboard', [ManagerDashboardController::class, 'index'])->name('manager.dashboard');
+Route::prefix('gestionnaire')->middleware(['auth', 'gestionnaire'])->group(function () {
+    Route::get('/dashboard', [GestionnaireDashboardController::class, 'index'])->name('gestionnaire.dashboard');
 });
-
 // Admin Routes
-// routes/web.php
-
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::resource('users', UserController::class)->names([
@@ -50,3 +54,34 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
+
+
+
+
+// Shared Routes for both Admin and Manager
+Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
+    // Categories
+    Route::resource('categories', CategoryController::class);
+    
+    // Suppliers
+    Route::resource('suppliers', SupplierController::class);
+    
+    // Products
+    Route::get('products', [ProductsController::class, 'index']);
+    // Purchases
+    Route::resource('purchases', PurchaseController::class);
+});
+// Shared Routes for Admin and Magasin
+Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
+    Route::resource('sales', SalesController::class);
+    Route::resource('products', ProductsController::class);
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::post('/reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
+    Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices/{sale}', [InvoicesController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{sale}/download', [InvoicesController::class, 'download'])->name('invoices.download');
+});
+
+
+
+

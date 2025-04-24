@@ -27,7 +27,7 @@ class ProfileController extends Controller
     
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:magasin,email,'.$user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:8|different:current_password',
             'password_confirmation' => 'nullable|same:new_password',
@@ -35,10 +35,9 @@ class ProfileController extends Controller
             'status' => 'sometimes|in:active,inactive'
         ]);
     
-        // Basic info update
+        // Rest of your method remains the same...
         $data = $request->only(['name', 'email', 'status']);
     
-        // Handle password change if provided
         if ($request->filled('current_password')) {
             if (!Hash::check($request->current_password, $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect']);
@@ -47,14 +46,11 @@ class ProfileController extends Controller
             $data['password'] = Hash::make($request->new_password);
         }
     
-        // Handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image if it exists
             if ($user->image && $user->image != 'no_image.jpg') {
                 Storage::delete('public/profile_images/'.$user->image);
             }
             
-            // Store new image
             $imageName = time().'.'.$request->image->extension();
             $request->image->storeAs('public/profile_images', $imageName);
             $data['image'] = $imageName;

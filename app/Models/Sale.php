@@ -20,4 +20,12 @@ class Sale extends Model
     {
         return $this->belongsTo(Client::class, 'client_id');
     }
+    // app/Models/Sale.php
+
+protected $casts = [
+    'date' => 'date', // or 'datetime' if you need time information
+];
+
+    
 }
+
