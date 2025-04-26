@@ -1,44 +1,48 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container-fluid">
-    <div class="row">
-        @if(auth()->user()->role === 'admin')
+@section('sidebar')
+    @if(auth()->user()->role === 'admin')
         @include('admin.partials.admin-sidebar')
-        @else
-            @include('gestionnaire.partials.sidebar_gestionnaire')
-        @endif
-        
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">{{ $title }}</h1>
-            </div>
+    @else
+        @include('gestionnaire.partials.sidebar_gestionnaire')
+    @endif
+@endsection
 
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+@section('content')
+<div class="flex-1 overflow-auto ml-64">
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 class="text-2xl font-bold text-gray-800">{{ $title }}</h1>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($categories as $category)
-                        <tr>
-                            <td>{{ $category->id }}</td>
-                            <td>{{ $category->name }}</td>
-                            <td>{{ $category->description ?? 'N/A' }}</td>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $category->id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $category->name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $category->description ?? 'N/A' }}</td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-            
-            <div class="d-flex justify-content-center mt-4">
+
+            <div class="px-6 py-4 border-t border-gray-200">
                 {{ $categories->links() }}
             </div>
-        </main>
+        </div>
     </div>
 </div>
 @endsection

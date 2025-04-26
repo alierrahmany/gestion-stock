@@ -4,69 +4,86 @@
     @include('admin.partials.admin-sidebar')
 @endsection
 
-
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
-        <h1 class="h2 fw-bold text-dark">Tableau de Bord Administrateur</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group">
-                <button type="button" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-calendar me-1"></i> {{ now()->format('d/m/Y') }}
-                </button>
+<div class="flex-1 overflow-auto ml-64">
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Tableau de Bord Administrateur</h1>
+            <div class="flex items-center space-x-2 bg-primary-50 px-4 py-2 rounded-lg">
+                <i class="far fa-calendar-alt text-primary-600"></i>
+                <span class="text-primary-800">{{ now()->format('d/m/Y') }}</span>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Administrateurs</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $userCounts['admin'] }}</div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Administrateurs Card -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-red-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-red-100 p-3 rounded-full">
+                            <i class="fas fa-shield-alt text-red-600 text-xl"></i>
                         </div>
-                        <div class="col-auto">
-                            <i class="bi bi-shield-lock fs-1 text-danger"></i>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Administrateurs</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $userCounts['admin'] }}</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestionnaires Card -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-amber-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-amber-100 p-3 rounded-full">
+                            <i class="fas fa-user-cog text-amber-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Gestionnaires</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $userCounts['gestionnaire'] }}</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Magasins Card -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-primary-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-primary-100 p-3 rounded-full">
+                            <i class="fas fa-store text-primary-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Magasins</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $userCounts['magasin'] }}</div>
+                                </dd>
+                            </dl>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Gestionnaires</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $userCounts['gestionnaire'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-person-gear fs-1 text-warning"></i>
-                        </div>
-                    </div>
-                </div>
+        <!-- Recent Activity Section -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Activité Récente</h3>
             </div>
-        </div>
-
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Magasins</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $userCounts['magasin'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-people fs-1 text-primary"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="px-6 py-4">
+                <p class="text-gray-500">Aucune activité récente</p>
             </div>
         </div>
     </div>
