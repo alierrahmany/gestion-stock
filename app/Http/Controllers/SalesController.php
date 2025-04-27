@@ -7,15 +7,46 @@ use App\Models\Product;
 use App\Models\Client;
 use Illuminate\Http\Request;
 
-
 class SalesController extends Controller
 {
-    //
-
-    public function index()
+    public function index(Request $request)
     {
-        $sales = Sale::with(['product', 'client'])->latest()->paginate(10);
-        return view('sales.index', compact('sales'));
+        $query = Sale::with(['product', 'client']);
+        $products = Product::all();
+        $clients = Client::all();
+
+        // Filter by product
+        if ($request->has('product') && $request->product !== '') {
+            $query->where('product_id', $request->product);
+        }
+
+        // Filter by client
+        if ($request->has('client') && $request->client !== '') {
+            $query->where('client_id', $request->client);
+        }
+
+        // Filter by date range
+        if ($request->has('date_start') && $request->date_start !== '') {
+            $query->whereDate('date', '>=', $request->date_start);
+        }
+        if ($request->has('date_end') && $request->date_end !== '') {
+            $query->whereDate('date', '<=', $request->date_end);
+        }
+
+        // Search by product name or client name
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->whereHas('product', function($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('client', function($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%");
+                });
+            });
+        }
+
+        $sales = $query->latest()->paginate(10);
+        return view('sales.index', compact('sales', 'products', 'clients'));
     }
 
     public function create()

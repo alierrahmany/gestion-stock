@@ -7,13 +7,17 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::paginate(10);
-        return view('categories.index', [
-            'title' => 'Catégories',
-            'categories' => $categories
-        ]);
+        $query = Category::query();
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where('name', 'LIKE', "%{$search}%");
+        }
+
+        $categories = $query->latest()->paginate(10);
+        return view('categories.index', compact('categories'));
     }
 
     public function create()

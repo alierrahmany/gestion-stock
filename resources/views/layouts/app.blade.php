@@ -87,6 +87,61 @@
                 </div>
             </header>
 
+            <nav class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <!-- Notifications Dropdown -->
+                        <div class="ml-3 relative">
+                            <div class="relative inline-block text-left">
+                                <button id="notification-menu-button" type="button" 
+                                        class="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-700 focus:outline-none">
+                                    <span class="sr-only">Notifications</span>
+                                    <i class="fas fa-bell text-xl"></i>
+                                    @if(auth()->user()->unreadNotifications->count() > 0)
+                                        <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                                            {{ auth()->user()->unreadNotifications->count() }}
+                                        </span>
+                                    @endif
+                                </button>
+
+                                <!-- Notifications Dropdown Panel -->
+                                <div id="notification-menu" 
+                                     class="hidden origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none"
+                                     role="menu" 
+                                     aria-orientation="vertical" 
+                                     aria-labelledby="notification-menu-button"
+                                     tabindex="-1">
+                                    <div class="py-1" role="none">
+                                        @forelse(auth()->user()->unreadNotifications as $notification)
+                                            <div class="px-4 py-3 hover:bg-gray-100">
+                                                <p class="text-sm text-red-600">
+                                                    {{ $notification->data['message'] }}
+                                                </p>
+                                                <div class="mt-1 flex justify-between items-center">
+                                                    <span class="text-xs text-gray-500">
+                                                        {{ $notification->created_at->diffForHumans() }}
+                                                    </span>
+                                                    <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">
+                                                            Marquer comme lu
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <div class="px-4 py-3 text-sm text-gray-500">
+                                                Aucune notification
+                                            </div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
             <!-- Scrollable Content -->
             <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 @yield('content')
@@ -114,6 +169,26 @@
             }
         });
     </script>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const button = document.getElementById('notification-menu-button');
+        const menu = document.getElementById('notification-menu');
+
+        button.addEventListener('click', function() {
+            menu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!button.contains(event.target) && !menu.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    });
+    </script>
+    @endpush
 
     @yield('scripts')
 </body>

@@ -22,6 +22,31 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ml-10">
+        <!-- Enhanced search form styling -->
+        <div class="mb-8">
+            <div class="flex gap-4 items-center">
+                <div class="flex-1 relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400 text-lg"></i>
+                    </div>
+                    <input type="text" 
+                           id="searchInput"
+                           name="search" 
+                           value="{{ request('search') }}" 
+                           class="block w-full pl-12 pr-4 py-3 text-lg border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
+                           placeholder="Rechercher une catégorie..."
+                           autocomplete="off">
+                </div>
+                @if(request('search'))
+                    <button onclick="clearSearch()" 
+                            class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 ease-in-out text-base">
+                        <i class="fas fa-times mr-2"></i>
+                        Réinitialiser
+                    </button>
+                @endif
+            </div>
+        </div>
+
         @if(session('success'))
             <div class="mb-6 rounded-md bg-green-50 p-4">
                 <div class="flex items-start">
@@ -50,9 +75,9 @@
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody id="categoriesTableBody" class="bg-white divide-y divide-gray-200">
                             @foreach($categories as $category)
-                            <tr class="hover:bg-gray-50 transition-colors">
+                            <tr class="hover:bg-gray-50 transition-colors category-row">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $category->id }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $category->name }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $category->description ?? 'N/A' }}</td>
@@ -93,6 +118,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Delete form handling code
     const deleteForms = document.querySelectorAll('.delete-form');
     
     if (deleteForms && deleteForms.length > 0) {
@@ -123,6 +149,49 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // Live Search Implementation
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('categoriesTableBody');
+    const rows = tableBody.getElementsByClassName('category-row');
+
+    searchInput.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+
+        Array.from(rows).forEach(row => {
+            const name = row.getElementsByTagName('td')[1].textContent.toLowerCase();
+            const description = row.getElementsByTagName('td')[2].textContent.toLowerCase();
+            
+            const matches = name.includes(searchTerm) || description.includes(searchTerm);
+            row.style.display = matches ? '' : 'none';
+        });
+
+        // Show "No results" message if no matches
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        
+        if (visibleRows.length === 0) {
+            if (!noResultsMessage) {
+                const message = document.createElement('tr');
+                message.id = 'noResultsMessage';
+                message.innerHTML = `
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                        Aucune catégorie trouvée pour "${searchTerm}"
+                    </td>
+                `;
+                tableBody.appendChild(message);
+            }
+        } else if (noResultsMessage) {
+            noResultsMessage.remove();
+        }
+    });
+
+    // Clear search function
+    window.clearSearch = function() {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+        history.replaceState({}, '', window.location.pathname);
+    };
 });
 </script>
 @endsection

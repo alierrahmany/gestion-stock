@@ -7,9 +7,18 @@ use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $suppliers = Supplier::latest()->paginate(10);
+        $query = Supplier::query();
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('contact', 'LIKE', "%{$search}%");
+        }
+
+        $suppliers = $query->latest()->paginate(10);
         $title = 'Liste des Fournisseurs';
         return view('suppliers.index', compact('suppliers', 'title'));
     }
