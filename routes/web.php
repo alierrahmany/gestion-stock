@@ -47,6 +47,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         'update' => 'users.update',
         'destroy' => 'users.destroy'
     ]);
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
 });
 // Profile Routes
 Route::middleware('auth')->group(function () {
@@ -62,10 +63,10 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
     // Categories
     Route::resource('categories', CategoryController::class);
-    
+
     // Suppliers
     Route::resource('suppliers', SupplierController::class);
-    
+
     // Products
     Route::get('products', [ProductsController::class, 'index']);
     // Purchases

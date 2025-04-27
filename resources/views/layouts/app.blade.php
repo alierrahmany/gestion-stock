@@ -38,6 +38,7 @@
             }
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Add SweetAlert2 -->
     @yield('styles')
 </head>
 <body class="font-sans antialiased bg-gray-50">

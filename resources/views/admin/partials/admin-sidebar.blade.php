@@ -47,13 +47,7 @@
 
     <div class="p-4 border-t border-primary-700">
         <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=0ea5e9&color=fff" alt="User avatar">
-            </div>
-            <div class="ml-3">
-                <p class="text-sm font-medium text-white">{{ auth()->user()->name }}</p>
-                <p class="text-xs font-medium text-primary-200">{{ ucfirst(auth()->user()->role) }}</p>
-            </div>
+            
         </div>
     </div>
 </div>

@@ -19,4 +19,49 @@ class SupplierController extends Controller
         $title = 'Détails du Fournisseur';
         return view('suppliers.show', compact('supplier', 'title'));
     }
+
+    public function create()
+    {
+        return view('suppliers.create', ['title' => 'Add New Supplier']);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:suppliers',
+            'contact' => 'required|string|max:50',
+            'address' => 'nullable|string'
+        ]);
+
+        Supplier::create($validated);
+        return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully');
+    }
+
+    public function edit(Supplier $supplier)
+    {
+        return view('suppliers.edit', [
+            'supplier' => $supplier,
+            'title' => 'Edit Supplier'
+        ]);
+    }
+
+    public function update(Request $request, Supplier $supplier)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:suppliers,email,' . $supplier->id,
+            'contact' => 'required|string|max:50',
+            'address' => 'nullable|string'
+        ]);
+
+        $supplier->update($validated);
+        return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully');
+    }
+
+    public function destroy(Supplier $supplier)
+    {
+        $supplier->delete();
+        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully');
+    }
 }
