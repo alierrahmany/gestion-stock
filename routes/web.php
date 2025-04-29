@@ -35,6 +35,14 @@ Route::middleware(['auth', 'magasin'])->group(function () {
 // Manager Routes
 Route::prefix('gestionnaire')->middleware(['auth', 'gestionnaire'])->group(function () {
     Route::get('/dashboard', [GestionnaireDashboardController::class, 'index'])->name('gestionnaire.dashboard');
+    Route::resource('products', ProductsController::class)->names([
+        'index' => 'gestionnaire.products.index',
+        'create' => 'gestionnaire.products.create',
+        'store' => 'gestionnaire.products.store',
+        'edit' => 'gestionnaire.products.edit',
+        'update' => 'gestionnaire.products.update',
+        'destroy' => 'gestionnaire.products.destroy'
+    ]);
 });
 // Admin Routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {

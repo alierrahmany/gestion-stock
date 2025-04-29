@@ -30,7 +30,7 @@ class ProductsController extends Controller
         }
 
         $products = $query->latest()->paginate(10);
-        return view('products.index', compact('products', 'categories'));
+        return view('gestionnaire.products.index', compact('products', 'categories'));
     }
 
     public function create()
