@@ -15,7 +15,7 @@
             <h1 class="text-2xl font-bold text-gray-800">
                 <i class="fas fa-boxes mr-2 text-blue-500"></i>Gestion des Produits
             </h1>
-            <a href="{{ route('products.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+            <a href="{{ route('gestionnaire.products.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700">
                 <i class="fas fa-plus-circle mr-2"></i> Nouveau Produit
             </a>
         </div>
@@ -29,18 +29,18 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-search text-gray-400 text-lg"></i>
                     </div>
-                    <input type="text" 
+                    <input type="text"
                            id="searchInput"
-                           name="search" 
-                           value="{{ request('search') }}" 
+                           name="search"
+                           value="{{ request('search') }}"
                            class="block w-full pl-12 pr-4 py-3 text-lg border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
                            placeholder="Rechercher un produit..."
                            autocomplete="off">
                 </div>
-                
+
                 <!-- Category Filter Dropdown -->
                 <div class="w-72">
-                    <select id="categoryFilter" 
+                    <select id="categoryFilter"
                             class="block w-full py-3 pl-3 pr-10 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out">
                         <option value="">Toutes les catégories</option>
                         @foreach($categories as $category)
@@ -52,7 +52,7 @@
                 </div>
 
                 @if(request('search') || request('category'))
-                    <button onclick="clearFilters()" 
+                    <button onclick="clearFilters()"
                             class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 ease-in-out text-base">
                         <i class="fas fa-times mr-2"></i>
                         Réinitialiser
@@ -63,15 +63,12 @@
 
         @if(session('success'))
             <div class="mb-6 rounded-md bg-green-50 p-4">
-                <div class="flex items-start">
+                <div class="flex">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                        <i class="fas fa-check-circle text-green-400"></i>
                     </div>
                     <div class="ml-3">
-                        <h3 class="text-sm font-medium text-green-800">Succès</h3>
-                        <div class="mt-1 text-sm text-green-700">
-                            <p>{{ session('success') }}</p>
-                        </div>
+                        <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
                     </div>
                 </div>
             </div>
@@ -163,16 +160,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const categoryId = row.getAttribute('data-category-id');
             const price = row.getElementsByTagName('td')[3].textContent.toLowerCase();
             const quantity = row.getElementsByTagName('td')[4].textContent.toLowerCase();
-            
-            const matchesSearch = searchTerm === '' || 
-                                name.includes(searchTerm) || 
-                                category.includes(searchTerm) || 
+
+            const matchesSearch = searchTerm === '' ||
+                                name.includes(searchTerm) ||
+                                category.includes(searchTerm) ||
                                 price.includes(searchTerm) ||
                                 quantity.includes(searchTerm);
-                               
+
             // Convert to string for comparison
             const matchesCategory = selectedCategory === '' || categoryId === selectedCategory.toString();
-            
+
             row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
         });
 
@@ -182,13 +179,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateNoResultsMessage(searchTerm, selectedCategory) {
         const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
         const noResultsMessage = document.getElementById('noResultsMessage');
-        
+
         if (visibleRows.length === 0) {
             if (!noResultsMessage) {
                 const message = document.createElement('tr');
                 message.id = 'noResultsMessage';
                 let messageText = 'Aucun produit trouvé';
-                
+
                 if (searchTerm) {
                     messageText += ` pour "${searchTerm}"`;
                 }
@@ -196,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const categoryName = categoryFilter.options[categoryFilter.selectedIndex].text;
                     messageText += ` dans la catégorie "${categoryName}"`;
                 }
-                
+
                 message.innerHTML = `
                     <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                         ${messageText}

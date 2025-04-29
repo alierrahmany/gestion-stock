@@ -44,6 +44,7 @@ Route::prefix('gestionnaire')->middleware(['auth', 'gestionnaire'])->group(funct
         'destroy' => 'gestionnaire.products.destroy'
     ]);
 });
+
 // Admin Routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
@@ -66,7 +67,8 @@ Route::middleware('auth')->group(function () {
 
 // Add these notification routes
 Route::post('/notifications/{notification}/mark-as-read', function ($id) {
-    auth()->user()->unreadNotifications->where('id', $id)->markAsRead();
+    $user = auth()->user();
+    $user->unreadNotifications->where('id', $id)->markAsRead();
     return back();
 })->name('notifications.markAsRead');
 
