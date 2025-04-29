@@ -35,6 +35,14 @@ Route::middleware(['auth', 'magasin'])->group(function () {
 // Manager Routes
 Route::prefix('gestionnaire')->middleware(['auth', 'gestionnaire'])->group(function () {
     Route::get('/dashboard', [GestionnaireDashboardController::class, 'index'])->name('gestionnaire.dashboard');
+    Route::resource('products', ProductsController::class)->names([
+        'index' => 'gestionnaire.products.index',
+        'create' => 'gestionnaire.products.create',
+        'store' => 'gestionnaire.products.store',
+        'edit' => 'gestionnaire.products.edit',
+        'update' => 'gestionnaire.products.update',
+        'destroy' => 'gestionnaire.products.destroy'
+    ]);
 });
 // Admin Routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
@@ -47,6 +55,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         'update' => 'users.update',
         'destroy' => 'users.destroy'
     ]);
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
 });
 // Profile Routes
 Route::middleware('auth')->group(function () {
@@ -55,17 +64,28 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
 
+// Add these notification routes
+Route::post('/notifications/{notification}/mark-as-read', function ($id) {
+    auth()->user()->unreadNotifications->where('id', $id)->markAsRead();
+    return back();
+})->name('notifications.markAsRead');
 
-
+// Add this temporary route for testing
+Route::get('/test-notification', function() {
+    $product = \App\Models\Product::first();
+    $product->quantity = 1;
+    $product->save();
+    return "Test notification sent!";
+});
 
 // Shared Routes for both Admin and Manager
 Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
     // Categories
     Route::resource('categories', CategoryController::class);
-    
+
     // Suppliers
     Route::resource('suppliers', SupplierController::class);
-    
+
     // Products
     Route::get('products', [ProductsController::class, 'index']);
     // Purchases

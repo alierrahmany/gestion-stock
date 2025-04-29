@@ -15,13 +15,18 @@ class Product extends Model
 
     protected $fillable = [
         'name',
+        'description',
         'categorie_id',
+        'price',
+        'quantity',
         'date',
         'file_name',
     ];
 
     protected $casts = [
         'date' => 'datetime',
+        'quantity' => 'integer',
+        'price' => 'decimal:2'
     ];
 
     protected $appends = ['image_url'];
@@ -63,5 +68,11 @@ class Product extends Model
     protected function defaultImageUrl()
     {
         return asset('storage/products/no_image.jpg');
+    }
+
+    // Add this method to check low stock
+    public function hasLowStock()
+    {
+        return $this->quantity <= 1;
     }
 }

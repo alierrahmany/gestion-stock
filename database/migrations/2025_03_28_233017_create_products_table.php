@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('name');
+            $table->text('description')->nullable();
             $table->unsignedBigInteger('categorie_id');
-            $table->dateTime('date');
+            $table->decimal('price', 10, 2)->default(0);
+            $table->integer('quantity')->default(0);
+            $table->dateTime('date')->useCurrent();  // Added default current timestamp
             $table->string('file_name')->nullable();
             $table->timestamps();
 

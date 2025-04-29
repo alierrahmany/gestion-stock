@@ -38,6 +38,17 @@
                 Ventes
             </a>
 
+            <a href="{{ route('purchases.index') }}" class="@if(request()->routeIs('purchases.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+                <i class="fas fa-shopping-basket mr-3 text-primary-300"></i>
+                Achats
+            </a>
+
+            <!-- Fixed Invoice Route -->
+            <a href="{{ route('invoices.index') }}" class="@if(request()->routeIs('invoices.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+                <i class="fas fa-file-invoice mr-3 text-primary-300"></i>
+                Factures
+            </a>
+
             <a href="{{ route('reports.index') }}" class="@if(request()->routeIs('reports.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
                 <i class="fas fa-chart-line mr-3 text-primary-300"></i>
                 Rapports
@@ -47,13 +58,7 @@
 
     <div class="p-4 border-t border-primary-700">
         <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=0ea5e9&color=fff" alt="User avatar">
-            </div>
-            <div class="ml-3">
-                <p class="text-sm font-medium text-white">{{ auth()->user()->name }}</p>
-                <p class="text-xs font-medium text-primary-200">{{ ucfirst(auth()->user()->role) }}</p>
-            </div>
+            
         </div>
     </div>
 </div>

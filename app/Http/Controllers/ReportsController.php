@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Sale;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -10,40 +11,28 @@ class ReportsController extends Controller
 {
     public function index()
     {
-        return view('reports.index');
+        $products = Product::all();
+        return view('reports.sales', compact('products'));
     }
 
     public function generate(Request $request)
     {
         $request->validate([
-            'report_type' => 'required|in:sales,products',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'product_id' => 'nullable|exists:products,id'
         ]);
 
-        $reportType = $request->report_type;
-        $startDate = $request->start_date ? Carbon::parse($request->start_date) : null;
-        $endDate = $request->end_date ? Carbon::parse($request->end_date) : null;
+        $query = Sale::with(['product', 'client'])
+            ->whereBetween('date', [$request->start_date, $request->end_date]);
 
-        if ($reportType === 'sales') {
-            $query = Sale::with(['product', 'client']);
-            
-            if ($startDate && $endDate) {
-                $query->whereBetween('date', [$startDate, $endDate]);
-            }
-            
-            $data = $query->get();
-            $total = $data->sum(function($sale) {
-                return $sale->qty * $sale->price;
-            });
-            
-            return view('reports.sales', compact('data', 'total', 'startDate', 'endDate'));
-        } else {
-            $query = Product::with(['category', 'sale']);
-            
-            $data = $query->get();
-            
-            return view('reports.products', compact('data'));
+        if ($request->product_id) {
+            $query->where('product_id', $request->product_id);
         }
+
+        $sales = $query->get();
+        $products = Product::all();
+
+        return view('reports.sales', compact('sales', 'products'));
     }
 }

@@ -16,9 +16,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'status',
         'image',
-        'status'
     ];
+
+    const ROLES = ['admin', 'gestionnaire', 'magasin'];
 
     protected $hidden = [
         'password',
