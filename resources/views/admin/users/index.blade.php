@@ -52,17 +52,12 @@
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            @if($user->image && $user->image != 'no_image.jpg')
-                                                <img class="h-10 w-10 rounded-full object-cover" 
-                                                    src="{{ asset('storage/profile_images/'.$user->image) }}" 
-                                                    alt="{{ $user->name }}">
-                                            @else
-                                                <div class="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold">
-                                                    {{ strtoupper(substr($user->name, 0, 1)) }}
-                                                </div>
-                                            @endif
-                                        </div>
+                                        @include('shared._avatar', [
+                                            'name' => $user->name,
+                                            'image' => $user->image,
+                                            'userId' => $user->id,
+                                            'size' => '10'
+                                        ])
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                             <div class="text-sm text-gray-500">Created {{ $user->created_at->format('m/d/Y') }}</div>

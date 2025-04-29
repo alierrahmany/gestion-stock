@@ -22,15 +22,15 @@
             <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 h-24 w-24">
-                        @if(auth()->user()->image && auth()->user()->image != 'no_image.jpg')
-                            <img class="h-24 w-24 rounded-full object-cover border-4 border-blue-100" 
-                                src="{{ asset('storage/profile_images/'.auth()->user()->image) }}" 
-                                alt="{{ auth()->user()->name }}">
-                        @else
-                            <div class="h-24 w-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold border-4 border-blue-100">
-                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                            </div>
-                        @endif
+                        @include('shared._avatar', [
+                            'name' => auth()->user()->name,
+                            'image' => auth()->user()->image,
+                            'size' => '24',
+                            'class' => 'border-4 border-blue-100'
+                        ])
+                    </div>
+                    <div class="ml-6">
+                        <h3 class="text-2xl font-bold text-gray-900">
                     </div>
                     <div class="ml-6">
                         <h3 class="text-2xl font-bold text-gray-900">
