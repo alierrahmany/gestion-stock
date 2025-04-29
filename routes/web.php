@@ -56,8 +56,19 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
 
+// Add these notification routes
+Route::post('/notifications/{notification}/mark-as-read', function ($id) {
+    auth()->user()->unreadNotifications->where('id', $id)->markAsRead();
+    return back();
+})->name('notifications.markAsRead');
 
-
+// Add this temporary route for testing
+Route::get('/test-notification', function() {
+    $product = \App\Models\Product::first();
+    $product->quantity = 1;
+    $product->save();
+    return "Test notification sent!";
+});
 
 // Shared Routes for both Admin and Manager
 Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
