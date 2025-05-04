@@ -7,13 +7,13 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Purchase::with(['product', 'supplier'])
-            ->latest();
+        $query = Purchase::with(['product', 'supplier'])->latest();
 
         if ($request->filled('supplier')) {
             $query->where('supplier_id', $request->supplier);
@@ -24,7 +24,7 @@ class PurchaseController extends Controller
         }
 
         if ($request->filled('date')) {
-            $query->whereDate('purchase_date', $request->date);
+            $query->whereDate('date', $request->date); // Changed from purchase_date to date
         }
 
         $purchases = $query->paginate(10);
@@ -47,23 +47,35 @@ class PurchaseController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
-            'buy_price' => 'required|numeric|min:0',
-            'purchase_date' => 'required|date',
+            'price' => 'required|numeric|min:0.01',
+            'date' => 'required|date',
         ]);
-
+    
         DB::beginTransaction();
         try {
-            $purchase = Purchase::create($validated);
-
-            $product = Product::find($validated['product_id']);
-            $product->increment('quantity', $validated['quantity']);
-
+            // Debug: Check what data is being received
+            Log::info('Creating purchase with data:', $validated);
+    
+            // Create the purchase with explicit field mapping
+            $purchase = new Purchase();
+            $purchase->supplier_id = $validated['supplier_id'];
+            $purchase->product_id = $validated['product_id'];
+            $purchase->quantity = $validated['quantity'];
+            $purchase->price = $validated['price'];
+            $purchase->date = $validated['date'];
+            $purchase->save();
+    
+            // Debug: Check if purchase was created
+            Log::info('Purchase created:', $purchase->toArray());
+    
+    
             DB::commit();
-
+    
             return redirect()->route('purchases.index')
                 ->with('success', 'Purchase created successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Purchase creation failed: ' . $e->getMessage());
             return back()->withInput()
                 ->with('error', 'Error creating purchase: ' . $e->getMessage());
         }
@@ -82,25 +94,23 @@ class PurchaseController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
-            'buy_price' => 'required|numeric|min:0',
-            'purchase_date' => 'required|date',
+            'price' => 'required|numeric|min:0.01',  // Changed from buy_price to price
+            'date' => 'required|date',              // Changed from purchase_date to date
         ]);
 
         DB::beginTransaction();
         try {
             $quantityDiff = $validated['quantity'] - $purchase->quantity;
 
-            $purchase->update($validated);
+            // Update with correct field names
+            $purchase->update([
+                'supplier_id' => $validated['supplier_id'],
+                'product_id' => $validated['product_id'],
+                'quantity' => $validated['quantity'],
+                'price' => $validated['price'],     // Changed from buy_price to price
+                'date' => $validated['date'],       // Changed from purchase_date to date
+            ]);
 
-            if ($purchase->product_id != $validated['product_id'] || $quantityDiff != 0) {
-                // Revert old product stock
-                $oldProduct = Product::find($purchase->product_id);
-                $oldProduct->decrement('quantity', $purchase->quantity);
-
-                // Update new product stock
-                $newProduct = Product::find($validated['product_id']);
-                $newProduct->increment('quantity', $validated['quantity']);
-            }
 
             DB::commit();
 

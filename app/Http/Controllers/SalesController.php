@@ -47,46 +47,37 @@ class SalesController extends Controller
             'product_id' => 'required|exists:products,id',
             'client_id' => 'required|exists:clients,id',
             'quantity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',  // Matches database column
+            'price' => 'required|numeric|min:0.01',
             'date' => 'required|date',
         ]);
 
         DB::beginTransaction();
         try {
-            $availableStock = Purchase::where('product_id', $validated['product_id'])
-                ->sum('quantity');
+            // Calculate available stock
+            $totalPurchased = Purchase::where('product_id', $validated['product_id'])
+                                    ->sum('quantity');
+            
+            $totalSold = Sale::where('product_id', $validated['product_id'])
+                            ->sum('quantity');
+            
+            $availableStock = $totalPurchased - $totalSold;
 
             if ($availableStock < $validated['quantity']) {
-                return back()->withInput()->with('error', 'Insufficient stock. Available: ' . $availableStock);
+                return back()->withInput()
+                            ->with('error', 'Insufficient stock. Available: ' . $availableStock);
             }
 
-            Sale::create([
-                'product_id' => $validated['product_id'],
-                'client_id' => $validated['client_id'],
-                'quantity' => $validated['quantity'],
-                'price' => $validated['price'],  // Matches database column
-                'date' => $validated['date'],
-            ]);
-
-            // FIFO stock deduction
-            $remaining = $validated['quantity'];
-            $purchases = Purchase::where('product_id', $validated['product_id'])
-                ->orderBy('purchase_date')
-                ->get();
-
-            foreach ($purchases as $purchase) {
-                if ($remaining <= 0) break;
-                $deduct = min($remaining, $purchase->quantity);
-                $purchase->decrement('quantity', $deduct);
-                $remaining -= $deduct;
-            }
+            // Create the sale
+            Sale::create($validated);
 
             DB::commit();
-            return redirect()->route('sales.index')->with('success', 'Sale created!');
+            return redirect()->route('sales.index')
+                            ->with('success', 'Sale created successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()
+                        ->with('error', 'Error: ' . $e->getMessage());
         }
     }
 
@@ -94,8 +85,14 @@ class SalesController extends Controller
     {
         $products = Product::orderBy('name')->get();
         $clients = Client::orderBy('name')->get();
-        $availableStock = Purchase::where('product_id', $sale->product_id)
-            ->sum('quantity') + $sale->quantity;
+        
+        // Calculate available stock including current sale quantity
+        $totalPurchased = Purchase::where('product_id', $sale->product_id)
+                                ->sum('quantity');
+        $totalSold = Sale::where('product_id', $sale->product_id)
+                        ->where('id', '!=', $sale->id)
+                        ->sum('quantity');
+        $availableStock = $totalPurchased - $totalSold;
 
         return view('sales.edit', compact('sale', 'products', 'clients', 'availableStock'));
     }
@@ -106,64 +103,37 @@ class SalesController extends Controller
             'product_id' => 'required|exists:products,id',
             'client_id' => 'required|exists:clients,id',
             'quantity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',  // Matches database column
+            'price' => 'required|numeric|min:0.01',
             'date' => 'required|date',
         ]);
 
         DB::beginTransaction();
         try {
             $quantityDiff = $validated['quantity'] - $sale->quantity;
-            $availableStock = Purchase::where('product_id', $validated['product_id'])
-                ->sum('quantity');
 
-            if ($quantityDiff > 0 && $availableStock < $quantityDiff) {
-                return back()->withInput()->with('error', 'Insufficient stock. Available: ' . $availableStock);
-            }
+            if ($quantityDiff > 0) { // If increasing quantity
+                $totalPurchased = Purchase::where('product_id', $validated['product_id'])
+                                        ->sum('quantity');
+                $totalSold = Sale::where('product_id', $validated['product_id'])
+                                ->sum('quantity');
+                $availableStock = $totalPurchased - $totalSold;
 
-            $sale->update([
-                'product_id' => $validated['product_id'],
-                'client_id' => $validated['client_id'],
-                'quantity' => $validated['quantity'],
-                'price' => $validated['price'],  // Matches database column
-                'date' => $validated['date'],
-            ]);
-
-            // Handle stock changes
-            if ($quantityDiff != 0) {
-                if ($quantityDiff > 0) {
-                    // Deduct additional quantity
-                    $remaining = $quantityDiff;
-                    $purchases = Purchase::where('product_id', $validated['product_id'])
-                        ->orderBy('purchase_date')
-                        ->get();
-
-                    foreach ($purchases as $purchase) {
-                        if ($remaining <= 0) break;
-                        $deduct = min($remaining, $purchase->quantity);
-                        $purchase->decrement('quantity', $deduct);
-                        $remaining -= $deduct;
-                    }
-                } else {
-                    // Return quantity
-                    $remaining = abs($quantityDiff);
-                    $purchases = Purchase::where('product_id', $validated['product_id'])
-                        ->orderBy('purchase_date', 'desc')
-                        ->get();
-
-                    foreach ($purchases as $purchase) {
-                        if ($remaining <= 0) break;
-                        $add = $remaining;
-                        $purchase->increment('quantity', $add);
-                        $remaining -= $add;
-                    }
+                if ($quantityDiff > $availableStock) {
+                    return back()->withInput()
+                                ->with('error', 'Insufficient stock for this increase. Available: ' . $availableStock);
                 }
             }
 
+            $sale->update($validated);
+
             DB::commit();
-            return redirect()->route('sales.index')->with('success', 'Sale updated!');
+            return redirect()->route('sales.index')
+                            ->with('success', 'Sale updated successfully!');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()
+                        ->with('error', 'Error: ' . $e->getMessage());
         }
     }
 
@@ -171,22 +141,10 @@ class SalesController extends Controller
     {
         DB::beginTransaction();
         try {
-            // Return quantity to purchases
-            $remaining = $sale->quantity;
-            $purchases = Purchase::where('product_id', $sale->product_id)
-                ->orderBy('purchase_date', 'desc')
-                ->get();
-
-            foreach ($purchases as $purchase) {
-                if ($remaining <= 0) break;
-                $add = $remaining;
-                $purchase->increment('quantity', $add);
-                $remaining -= $add;
-            }
-
             $sale->delete();
             DB::commit();
-            return redirect()->route('sales.index')->with('success', 'Sale deleted!');
+            return redirect()->route('sales.index')
+                            ->with('success', 'Sale deleted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error: ' . $e->getMessage());
@@ -195,7 +153,12 @@ class SalesController extends Controller
 
     public function getAvailableStock($productId)
     {
-        $stock = Purchase::where('product_id', $productId)->sum('quantity');
-        return response()->json(['stock' => $stock]);
+        $totalPurchased = Purchase::where('product_id', $productId)
+                                ->sum('quantity');
+        $totalSold = Sale::where('product_id', $productId)
+                        ->sum('quantity');
+        $availableStock = $totalPurchased - $totalSold;
+        
+        return response()->json(['stock' => $availableStock]);
     }
 }

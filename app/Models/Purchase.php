@@ -13,14 +13,16 @@ class Purchase extends Model
         'product_id',
         'supplier_id',
         'quantity',
-        'price',
-        'date',
+        'price',    // Changed from buy_price to price
+        'date',     // Changed from purchase_date to date
         'reference'
     ];
 
     protected $casts = [
         'date' => 'date'
     ];
+
+    protected $appends = ['formatted_date'];
 
     public function product()
     {

@@ -119,7 +119,7 @@
                     @forelse($purchases as $purchase)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $purchase->purchase_date->format('d/m/Y') }}
+                            {{ $purchase->formatted_date }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $purchase->supplier->name }}
@@ -131,10 +131,10 @@
                             {{ $purchase->quantity }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ number_format($purchase->buy_price, 2) }} MAD
+                            {{ number_format($purchase->price, 2) }} MAD
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ number_format($purchase->total, 2) }} MAD
+                            {{ number_format($purchase->price * $purchase->quantity, 2) }} MAD
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex justify-end space-x-2">

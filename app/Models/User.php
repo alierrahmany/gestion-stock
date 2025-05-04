@@ -31,9 +31,14 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * Check if the user has admin privileges.
+     *
+     * @return bool
+     */
     public function isAdmin()
     {
-        return $this->role === 'admin';
+        return $this->role === 'admin'; // Adjust 'role' and 'admin' based on your database structure
     }
 
     public function isGestionnaire()

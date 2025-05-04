@@ -46,7 +46,7 @@
                             <select id="product_id" name="product_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                 <option value="">Select Product</option>
                                 @foreach($products as $product)
-                                    <option value="{{ $product->id }}" data-price="{{ $product->buy_price }}" {{ $purchase->product_id == $product->id ? 'selected' : '' }}>
+                                    <option value="{{ $product->id }}" data-price="{{ $product->price }}" {{ $purchase->product_id == $product->id ? 'selected' : '' }}>
                                         {{ $product->name }} (Stock: {{ $product->quantity }})
                                     </option>
                                 @endforeach
@@ -67,18 +67,18 @@
 
                         <!-- Unit Price -->
                         <div>
-                            <label for="buy_price" class="block text-sm font-medium text-gray-700">Unit Price (MAD) *</label>
-                            <input type="number" step="0.01" id="buy_price" name="buy_price" min="0" value="{{ old('buy_price', $purchase->buy_price) }}" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            @error('buy_price')
+                            <label for="price" class="block text-sm font-medium text-gray-700">Unit Price (MAD) *</label>
+                            <input type="number" step="0.01" id="price" name="price" min="0.01" value="{{ old('price', $purchase->price) }}" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            @error('price')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <!-- Purchase Date -->
                         <div>
-                            <label for="purchase_date" class="block text-sm font-medium text-gray-700">Purchase Date *</label>
-                            <input type="date" id="purchase_date" name="purchase_date" value="{{ old('purchase_date', $purchase->purchase_date->format('Y-m-d')) }}" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            @error('purchase_date')
+                            <label for="date" class="block text-sm font-medium text-gray-700">Purchase Date *</label>
+                            <input type="date" id="date" name="date" value="{{ old('date', $purchase->date->format('Y-m-d')) }}" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            @error('date')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -87,7 +87,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Total Price (MAD)</label>
                             <div class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm" id="total_price">
-                                {{ number_format($purchase->quantity * $purchase->buy_price, 2) }} MAD
+                                {{ number_format($purchase->quantity * $purchase->price, 2) }} MAD
                             </div>
                         </div>
                     </div>
@@ -107,28 +107,28 @@
 document.addEventListener('DOMContentLoaded', function() {
     const productSelect = document.getElementById('product_id');
     const quantityInput = document.getElementById('quantity');
-    const buyPriceInput = document.getElementById('buy_price');
+    const priceInput = document.getElementById('price');
     const totalPriceDiv = document.getElementById('total_price');
 
     function calculateTotal() {
         const quantity = parseFloat(quantityInput.value) || 0;
-        const price = parseFloat(buyPriceInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
         const total = (quantity * price).toFixed(2);
         totalPriceDiv.textContent = total + ' MAD';
     }
 
-    // When product changes, update the buy price
+    // When product changes, update the price
     productSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption && selectedOption.dataset.price) {
-            buyPriceInput.value = selectedOption.dataset.price;
+            priceInput.value = selectedOption.dataset.price;
             calculateTotal();
         }
     });
 
     // When quantity or price changes, update total
     quantityInput.addEventListener('input', calculateTotal);
-    buyPriceInput.addEventListener('input', calculateTotal);
+    priceInput.addEventListener('input', calculateTotal);
 });
 </script>
 @endsection

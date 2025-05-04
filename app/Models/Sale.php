@@ -14,12 +14,12 @@ class Sale extends Model
         'client_id',
         'quantity',
         'price',
-        'date',
-        'reference'
+        'date'
     ];
 
     protected $casts = [
-        'date' => 'date'
+        'date' => 'date',
+        'price' => 'decimal:2'
     ];
 
     public function product()
