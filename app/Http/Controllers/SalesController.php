@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sale;
 use App\Models\Product;
 use App\Models\Client;
+use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,48 +13,31 @@ class SalesController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Sale::with(['product', 'client']);
-        $products = Product::all();
-        $clients = Client::all();
+        $query = Sale::with(['product', 'client'])->latest();
+        $products = Product::orderBy('name')->get();
+        $clients = Client::orderBy('name')->get();
 
-        // Filter by product
-        if ($request->has('product') && $request->product !== '') {
+        if ($request->filled('product')) {
             $query->where('product_id', $request->product);
         }
 
-        // Filter by client
-        if ($request->has('client') && $request->client !== '') {
+        if ($request->filled('client')) {
             $query->where('client_id', $request->client);
         }
 
-        // Filter by date range
-        if ($request->has('date_start') && $request->date_start !== '') {
-            $query->whereDate('date', '>=', $request->date_start);
-        }
-        if ($request->has('date_end') && $request->date_end !== '') {
-            $query->whereDate('date', '<=', $request->date_end);
+        if ($request->filled('date')) {
+            $query->whereDate('date', $request->date);
         }
 
-        // Search by product name or client name
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->whereHas('product', function($q) use ($search) {
-                    $q->where('name', 'LIKE', "%{$search}%");
-                })->orWhereHas('client', function($q) use ($search) {
-                    $q->where('name', 'LIKE', "%{$search}%");
-                });
-            });
-        }
+        $sales = $query->paginate(10)->withQueryString();
 
-        $sales = $query->latest()->paginate(10);
         return view('sales.index', compact('sales', 'products', 'clients'));
     }
 
     public function create()
     {
-        $products = Product::all();
-        $clients = Client::all();
+        $products = Product::orderBy('name')->get();
+        $clients = Client::orderBy('name')->get();
         return view('sales.create', compact('products', 'clients'));
     }
 
@@ -63,75 +47,155 @@ class SalesController extends Controller
             'product_id' => 'required|exists:products,id',
             'client_id' => 'required|exists:clients,id',
             'quantity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',  // Matches database column
             'date' => 'required|date',
         ]);
 
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
+            $availableStock = Purchase::where('product_id', $validated['product_id'])
+                ->sum('quantity');
 
-            // Get the product
-            $product = Product::findOrFail($validated['product_id']);
-
-            // Check if enough stock
-            if ($product->quantity < $validated['quantity']) {
-                return back()->withErrors(['quantity' => 'Stock insuffisant pour ce produit.'])->withInput();
+            if ($availableStock < $validated['quantity']) {
+                return back()->withInput()->with('error', 'Insufficient stock. Available: ' . $availableStock);
             }
 
-            // Calculate total price
-            $total_price = $product->price * $validated['quantity'];
-
-            // Create sale
-            $sale = Sale::create([
+            Sale::create([
                 'product_id' => $validated['product_id'],
                 'client_id' => $validated['client_id'],
                 'quantity' => $validated['quantity'],
-                'total_price' => $total_price,
+                'price' => $validated['price'],  // Matches database column
                 'date' => $validated['date'],
             ]);
 
-            // Update product quantity
-            $product->quantity -= $validated['quantity'];
-            $product->save();
+            // FIFO stock deduction
+            $remaining = $validated['quantity'];
+            $purchases = Purchase::where('product_id', $validated['product_id'])
+                ->orderBy('purchase_date')
+                ->get();
+
+            foreach ($purchases as $purchase) {
+                if ($remaining <= 0) break;
+                $deduct = min($remaining, $purchase->quantity);
+                $purchase->decrement('quantity', $deduct);
+                $remaining -= $deduct;
+            }
 
             DB::commit();
-            return redirect()->route('sales.index')->with('success', 'Vente enregistrée avec succès.');
+            return redirect()->route('sales.index')->with('success', 'Sale created!');
 
         } catch (\Exception $e) {
-            DB::rollback();
-            return back()->withErrors(['error' => 'Une erreur est survenue lors de l\'enregistrement de la vente.'])->withInput();
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
         }
-    }
-
-    public function show(Sale $sale)
-    {
-        return view('sales.show', compact('sale'));
     }
 
     public function edit(Sale $sale)
     {
-        $products = Product::all();
-        $clients = Client::all();
-        return view('sales.edit', compact('sale', 'products', 'clients'));
+        $products = Product::orderBy('name')->get();
+        $clients = Client::orderBy('name')->get();
+        $availableStock = Purchase::where('product_id', $sale->product_id)
+            ->sum('quantity') + $sale->quantity;
+
+        return view('sales.edit', compact('sale', 'products', 'clients', 'availableStock'));
     }
 
     public function update(Request $request, Sale $sale)
     {
-        $request->validate([
+        $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'client_id' => 'required|exists:clients,id',
-            'qty' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',  // Matches database column
             'date' => 'required|date',
         ]);
 
-        $sale->update($request->all());
+        DB::beginTransaction();
+        try {
+            $quantityDiff = $validated['quantity'] - $sale->quantity;
+            $availableStock = Purchase::where('product_id', $validated['product_id'])
+                ->sum('quantity');
 
-        return redirect()->route('sales.index')->with('success', 'Sale updated successfully.');
+            if ($quantityDiff > 0 && $availableStock < $quantityDiff) {
+                return back()->withInput()->with('error', 'Insufficient stock. Available: ' . $availableStock);
+            }
+
+            $sale->update([
+                'product_id' => $validated['product_id'],
+                'client_id' => $validated['client_id'],
+                'quantity' => $validated['quantity'],
+                'price' => $validated['price'],  // Matches database column
+                'date' => $validated['date'],
+            ]);
+
+            // Handle stock changes
+            if ($quantityDiff != 0) {
+                if ($quantityDiff > 0) {
+                    // Deduct additional quantity
+                    $remaining = $quantityDiff;
+                    $purchases = Purchase::where('product_id', $validated['product_id'])
+                        ->orderBy('purchase_date')
+                        ->get();
+
+                    foreach ($purchases as $purchase) {
+                        if ($remaining <= 0) break;
+                        $deduct = min($remaining, $purchase->quantity);
+                        $purchase->decrement('quantity', $deduct);
+                        $remaining -= $deduct;
+                    }
+                } else {
+                    // Return quantity
+                    $remaining = abs($quantityDiff);
+                    $purchases = Purchase::where('product_id', $validated['product_id'])
+                        ->orderBy('purchase_date', 'desc')
+                        ->get();
+
+                    foreach ($purchases as $purchase) {
+                        if ($remaining <= 0) break;
+                        $add = $remaining;
+                        $purchase->increment('quantity', $add);
+                        $remaining -= $add;
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('sales.index')->with('success', 'Sale updated!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Sale $sale)
     {
-        $sale->delete();
-        return redirect()->route('sales.index')->with('success', 'Sale deleted successfully.');
+        DB::beginTransaction();
+        try {
+            // Return quantity to purchases
+            $remaining = $sale->quantity;
+            $purchases = Purchase::where('product_id', $sale->product_id)
+                ->orderBy('purchase_date', 'desc')
+                ->get();
+
+            foreach ($purchases as $purchase) {
+                if ($remaining <= 0) break;
+                $add = $remaining;
+                $purchase->increment('quantity', $add);
+                $remaining -= $add;
+            }
+
+            $sale->delete();
+            DB::commit();
+            return redirect()->route('sales.index')->with('success', 'Sale deleted!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function getAvailableStock($productId)
+    {
+        $stock = Purchase::where('product_id', $productId)->sum('quantity');
+        return response()->json(['stock' => $stock]);
     }
 }

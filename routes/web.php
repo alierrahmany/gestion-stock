@@ -92,14 +92,21 @@ Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
     // Products
     Route::get('products', [ProductsController::class, 'index']);
     // Purchases
-    Route::resource('purchases', PurchaseController::class);
+    Route::resource('purchases', PurchaseController::class)->except(['show']);
+
 });
 // Shared Routes for Admin and Magasin
+// In your existing route groups:
+
+// Shared Routes for Admin and Magasin
 Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
-    Route::resource('sales', SalesController::class);
+    Route::resource('sales', SalesController::class)->except(['show']);
+    Route::get('sales/stock/{product}', [SalesController::class, 'getAvailableStock']);
+    Route::get('sales/report', [SalesController::class, 'report'])->name('sales.report');
     Route::resource('products', ProductsController::class);
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
-    Route::post('/reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
+    Route::get('/reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
+    Route::get('/reports/export/{format}', [ReportsController::class, 'export'])->name('reports.export');
     Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{sale}', [InvoicesController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{sale}/download', [InvoicesController::class, 'download'])->name('invoices.download');

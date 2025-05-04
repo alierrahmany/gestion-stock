@@ -188,6 +188,7 @@
         });
     });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.35.0/apexcharts.min.js"></script>
     @endpush
 
     @yield('scripts')

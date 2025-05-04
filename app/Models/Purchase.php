@@ -4,43 +4,45 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class Purchase extends Model
 {
-    /** @use HasFactory<\Database\Factories\PurchaseFactory> */
     use HasFactory;
 
-    protected $table = 'purchases';
     protected $fillable = [
-        'reference',
-        'supplier_id',
         'product_id',
+        'supplier_id',
         'quantity',
-        'unit_price',
-        'total_price',
-        'purchase_date'    // Make sure this matches your database column name
+        'price',
+        'date',
+        'reference'
     ];
+
     protected $casts = [
-        'purchase_date' => 'datetime',  // Ensure proper date casting
-        'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
+        'date' => 'date'
     ];
-    protected $dates = [
-        'purchase_date'
-    ];
-    protected $appends = ['total_price'];
-    protected $hidden = ['created_at', 'updated_at'];
+
     public function product()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(Product::class)->withDefault([
+            'name' => 'Deleted Product'
+        ]);
     }
+
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class)->withDefault([
+            'name' => 'Unknown Supplier'
+        ]);
     }
-    public function getTotalPriceAttribute()
+
+    public function getFormattedDateAttribute()
     {
-        return $this->quantity * $this->product->price;
+        return $this->date ? $this->date->format('d/m/Y') : 'N/A';
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->quantity * $this->price;
     }
 }

@@ -30,7 +30,7 @@ class ProductsController extends Controller
         }
 
         $products = $query->latest()->paginate(10);
-        return view('gestionnaire.products.index', compact('products', 'categories'));
+        return view('products.index', compact('products', 'categories'));
     }
 
     public function create()
@@ -43,10 +43,7 @@ class ProductsController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'categorie_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:0',
             'file_name' => 'nullable|image|max:2048'
         ]);
 
@@ -74,10 +71,7 @@ class ProductsController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'categorie_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:0',
             'file_name' => 'nullable|image|max:2048'
         ]);
 

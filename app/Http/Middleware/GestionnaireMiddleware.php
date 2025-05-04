@@ -11,7 +11,7 @@ class GestionnaireMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && (Auth::user()->isGestionnaire() || Auth::user()->isAdmin())) {
+        if (Auth::check() && (Auth::user()->role === 'gestionnaire' || Auth::user()->role === 'admin')) {
             return $next($request);
         }
 

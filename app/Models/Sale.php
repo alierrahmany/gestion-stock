@@ -9,29 +9,40 @@ class Sale extends Model
 {
     use HasFactory;
 
-    protected $table = 'sales';
     protected $fillable = [
         'product_id',
         'client_id',
         'quantity',
-        'total_price',
-        'date'
+        'price',
+        'date',
+        'reference'
     ];
 
     protected $casts = [
-        'date' => 'datetime',
-        'total_price' => 'decimal:2',
-        'quantity' => 'integer'
+        'date' => 'date'
     ];
 
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withDefault([
+            'name' => 'Deleted Product'
+        ]);
     }
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class)->withDefault([
+            'name' => 'Unknown Client'
+        ]);
+    }
+
+    public function getFormattedDateAttribute()
+    {
+        return $this->date ? $this->date->format('d/m/Y') : 'N/A';
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->quantity * $this->price;
     }
 }
-

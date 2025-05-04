@@ -82,13 +82,21 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
                         @foreach($products as $product)
+                        @php
+                            // Calculate total purchased quantity
+                            $totalPurchased = $product->purchases->sum('quantity');
+                            // Calculate total sold quantity
+                            $totalSold = $product->sales->sum('quantity');
+                            // Calculate current stock
+                            $currentStock = $totalPurchased - $totalSold;
+                        @endphp
                         <tr class="hover:bg-gray-50 transition-colors product-row" data-category-id="{{ $product->categorie_id }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($product->file_name)
@@ -101,8 +109,12 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $product->name }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->price }} DH</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->quantity }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-2 py-1 rounded-full {{ $currentStock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                    {{ $currentStock }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->created_at->format('d/m/Y') }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end space-x-3">
                                     <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900">
@@ -157,14 +169,12 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.from(rows).forEach(row => {
             const name = row.getElementsByTagName('td')[1].textContent.toLowerCase();
             const category = row.getElementsByTagName('td')[2].textContent.toLowerCase();
+            const quantity = row.getElementsByTagName('td')[3].textContent.toLowerCase();
             const categoryId = row.getAttribute('data-category-id');
-            const price = row.getElementsByTagName('td')[3].textContent.toLowerCase();
-            const quantity = row.getElementsByTagName('td')[4].textContent.toLowerCase();
 
             const matchesSearch = searchTerm === '' ||
                                 name.includes(searchTerm) ||
                                 category.includes(searchTerm) ||
-                                price.includes(searchTerm) ||
                                 quantity.includes(searchTerm);
 
             // Convert to string for comparison

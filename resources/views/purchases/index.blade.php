@@ -1,74 +1,102 @@
 @extends('layouts.app')
 
 @section('sidebar')
-    @if(auth()->user()->role === 'admin')
-        @include('admin.partials.admin-sidebar')
-    @elseif(auth()->user()->role === 'gestionnaire')
-        @include('gestionnaire.partials.sidebar_gestionnaire')
-    @endif
+    @include(auth()->user()->role === 'admin' ? 'admin.partials.admin-sidebar' : 'gestionnaire.partials.sidebar_gestionnaire')
 @endsection
 
 @section('content')
 <div class="flex-1 overflow-auto ml-64">
+    <!-- Flash Message -->
+    @if(session()->has('success') || session()->has('error'))
+    <div id="flash-message" class="fixed bottom-4 right-4 z-50 transition-all duration-300 transform translate-y-6 opacity-0">
+        <div class="px-6 py-4 rounded-lg shadow-lg text-white font-medium flex items-center
+            {{ session()->has('success') ? 'bg-green-500' : 'bg-red-500' }}">
+            @if(session()->has('success'))
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            @else
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            @endif
+            {{ session('success') ?? session('error') }}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessage = document.getElementById('flash-message');
+            if (flashMessage) {
+                // Show message with animation
+                setTimeout(() => {
+                    flashMessage.classList.remove('translate-y-6', 'opacity-0');
+                    flashMessage.classList.add('translate-y-0', 'opacity-100');
+                }, 100);
+
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    flashMessage.classList.remove('translate-y-0', 'opacity-100');
+                    flashMessage.classList.add('translate-y-6', 'opacity-0');
+
+                    // Remove from DOM after animation completes
+                    setTimeout(() => {
+                        flashMessage.remove();
+                    }, 300);
+                }, 2000);
+            }
+        });
+    </script>
+    @endif
+
     <div class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800">
-                <i class="fas fa-shopping-basket mr-2 text-blue-500"></i>Gestion des Achats
+                <i class="fas fa-shopping-basket mr-2 text-blue-500"></i>Purchases Management
             </h1>
             <a href="{{ route('purchases.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
-                <i class="fas fa-plus-circle mr-2"></i> Nouvel Achat
+                <i class="fas fa-plus-circle mr-2"></i> New Purchase
             </a>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ml-10">
-        <!-- Enhanced filters section -->
-        <div class="mb-8 bg-white p-6 rounded-xl shadow-sm">
-            <form id="filterForm" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <!-- Search Input -->
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </div>
-                        <input type="text" 
-                               id="searchInput"
-                               name="search" 
-                               class="block w-full pl-10 pr-4 py-3 text-lg border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
-                               placeholder="Rechercher un achat...">
-                    </div>
-
-                    <!-- Supplier Filter -->
-                    <div>
-                        <select id="supplierFilter" 
-                                name="supplier" 
-                                class="block w-full py-3 pl-3 pr-10 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out">
-                            <option value="">Tous les fournisseurs</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Product Filter -->
-                    <div>
-                        <select id="productFilter" 
-                                name="product" 
-                                class="block w-full py-3 pl-3 pr-10 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out">
-                            <option value="">Tous les produits</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Date Range -->
-                    <div class="flex space-x-2">
-                        <input type="date" 
-                               id="dateInput" 
-                               name="date" 
-                               class="block w-full py-3 px-3 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out">
-                    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Filters -->
+        <div class="mb-6 bg-white p-4 rounded-lg shadow">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Product</label>
+                    <select name="product" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="">All Products</option>
+                        @foreach($products as $product)
+                            <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>
+                                {{ $product->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Supplier</label>
+                    <select name="supplier" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="">All Suppliers</option>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}" {{ request('supplier') == $supplier->id ? 'selected' : '' }}>
+                                {{ $supplier->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date" name="date" value="{{ request('date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Filter
+                    </button>
+                    <a href="{{ route('purchases.index') }}" class="ml-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                        Reset
+                    </a>
                 </div>
             </form>
         </div>
@@ -79,22 +107,19 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Référence</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fournisseur</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="purchasesTableBody" class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($purchases as $purchase)
-                    <tr class="hover:bg-gray-50 purchase-row">
+                    <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ optional($purchase->purchase_date)->format('d/m/Y') ?? 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $purchase->reference }}
+                            {{ $purchase->purchase_date->format('d/m/Y') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $purchase->supplier->name }}
@@ -102,11 +127,34 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $purchase->product->name }}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ $purchase->quantity }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ number_format($purchase->buy_price, 2) }} MAD
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ number_format($purchase->total, 2) }} MAD
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ route('purchases.edit', $purchase->id) }}" class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" onsubmit="return confirm('Are you sure?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                            Aucun achat trouvé.
+                        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No purchases found.
                         </td>
                     </tr>
                     @endforelse
@@ -114,7 +162,7 @@
             </table>
         </div>
 
-        <div class="d-flex justify-content-center mt-4">
+        <div class="mt-4">
             {{ $purchases->links() }}
         </div>
     </div>
