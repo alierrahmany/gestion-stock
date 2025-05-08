@@ -6,13 +6,15 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\User;
 
-class UsersTableSeeder extends Seeder
+class UsersSeeder extends Seeder
 {
     public function run()
     {
         // Clear existing users
-        DB::table('users')->truncate();
+        User::query()->delete();
+
 
         // Create admin user
         DB::table('users')->insert([

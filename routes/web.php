@@ -14,6 +14,8 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\InvoicesController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\DocumentsController;
 
 // Redirect to login
 Route::get('/', fn () => redirect()->route('login'));
@@ -35,10 +37,12 @@ Route::middleware('auth')->group(function () {
 });
 
 // Notification Routes
-Route::post('/notifications/{notification}/mark-as-read', function ($id) {
-    auth()->user()->unreadNotifications->where('id', $id)->markAsRead();
-    return back();
-})->name('notifications.markAsRead');
+Route::prefix('notifications')->group(function () {
+    Route::get('/', [NotificationsController::class, 'index'])->name('notifications.index');
+    Route::post('/{notification}/mark-as-read', [NotificationsController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/mark-all-as-read', [NotificationsController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::delete('/{notification}', [NotificationsController::class, 'destroy'])->name('notifications.destroy');
+});
 
 Route::get('/test-notification', function () {
     $product = \App\Models\Product::first();
@@ -106,4 +110,19 @@ Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
     Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{sale}', [InvoicesController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{sale}/download', [InvoicesController::class, 'download'])->name('invoices.download');
+    Route::prefix('documents')->group(function () {
+        Route::get('/', [DocumentsController::class, 'index'])->name('documents.index');
+        
+        // Delivery Notes (Bon de Livraison)
+        Route::get('/sales', [DocumentsController::class, 'sales'])->name('documents.sales');
+        Route::get('/sales/{sale}/download', [DocumentsController::class, 'downloadDeliveryNote'])
+             ->name('documents.delivery-note.download');
+        
+        // Purchase Orders (Bon d'Achat)
+        Route::get('/purchases', [DocumentsController::class, 'purchases'])->name('documents.purchases');
+        Route::get('/purchases/{purchase}/download', [DocumentsController::class, 'downloadPurchaseOrder'])
+             ->name('documents.purchase-order.download');
+        Route::get('/sales/print-all', [DocumentsController::class, 'printAllSales'])->name('documents.sales.print-all');
+        Route::get('/purchases/print-all', [DocumentsController::class, 'printAllPurchases'])->name('documents.purchases.print-all');
+    });
 });

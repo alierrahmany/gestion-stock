@@ -8,6 +8,8 @@ use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Notification;
 
 class PurchaseController extends Controller
 {
@@ -68,6 +70,13 @@ class PurchaseController extends Controller
             // Debug: Check if purchase was created
             Log::info('Purchase created:', $purchase->toArray());
     
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Purchase #' . $purchase->id . ' from ' . $purchase->supplier->name,
+                'read' => false,
+                'type' => 'purchase'
+            ]);
     
             DB::commit();
     
@@ -111,6 +120,13 @@ class PurchaseController extends Controller
                 'date' => $validated['date'],       // Changed from purchase_date to date
             ]);
 
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Purchase #' . $purchase->id . ' Updated from ' . $purchase->supplier->name,
+                'read' => false,
+                'type' => 'purchase'
+            ]);
 
             DB::commit();
 
@@ -131,6 +147,14 @@ class PurchaseController extends Controller
             $product->decrement('quantity', $purchase->quantity);
 
             $purchase->delete();
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Purchase #' . $purchase->id . ' Deleted from ' . $purchase->supplier->name,
+                'read' => false,
+                'type' => 'purchase'
+            ]);
 
             DB::commit();
 

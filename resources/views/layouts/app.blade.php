@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') | Stock Management</title>
+    
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
 
@@ -38,7 +39,7 @@
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @yield('styles')
 </head>
 <body class="font-sans antialiased bg-gray-50">
@@ -50,55 +51,115 @@
 
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header aligned with sidebar -->
+            <!-- Header -->
             <header class="bg-white shadow-sm z-10">
                 <div class="flex justify-between items-center h-16 px-6">
                     <h1 class="text-xl font-bold text-gray-800">
                         @yield('header-title', 'Dashboard')
                     </h1>
                     <div class="flex items-center space-x-4">
-                        <!-- Notifications Icon -->
+                        <!-- Notifications Dropdown - Only for Admin -->
+                        @if(auth()->user()->role === 'admin')
                         <div class="relative">
                             <button id="notification-menu-button" type="button"
                                     class="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-700 focus:outline-none">
                                 <span class="sr-only">Notifications</span>
                                 <i class="fas fa-bell text-xl"></i>
-                                <x-notification-count />
+                                @php
+                                    $unreadCount = \App\Models\Notification::where('read', false)->count();
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span class="notification-badge absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                                        {{ $unreadCount }}
+                                    </span>
+                                @endif
                             </button>
 
                             <!-- Notifications Dropdown Panel -->
                             <div id="notification-menu"
-                                 class="hidden origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none z-50"
-                                 role="menu"
-                                 aria-orientation="vertical"
-                                 aria-labelledby="notification-menu-button"
-                                 tabindex="-1">
+                                class="hidden origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none z-50 max-h-[500px] overflow-y-auto"
+                                role="menu"
+                                aria-orientation="vertical"
+                                aria-labelledby="notification-menu-button"
+                                tabindex="-1">
+                                <!-- Filter Buttons -->
+                                <div class="sticky top-0 bg-white px-4 py-2 border-b flex space-x-2 overflow-x-auto">
+                                    <button class="filter-btn active px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="all">All</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="product">Products</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-green-100 text-green-800" data-filter="sale">Sales</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800" data-filter="purchase">Purchases</button>
+                                </div>
+                                
+                                <!-- Notifications List -->
                                 <div class="py-1" role="none">
-                                    @forelse(auth()->user()->unreadNotifications as $notification)
-                                        <div class="px-4 py-3 hover:bg-gray-100">
-                                            <p class="text-sm text-red-600">
-                                                {{ $notification->data['message'] }}
-                                            </p>
-                                            <div class="mt-1 flex justify-between items-center">
-                                                <span class="text-xs text-gray-500">
-                                                    {{ $notification->created_at->diffForHumans() }}
-                                                </span>
-                                                <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">
-                                                        Marquer comme lu
-                                                    </button>
-                                                </form>
+                                    @php
+                                        $notificationsQuery = \App\Models\Notification::with('actionUser')->latest();
+                                    @endphp
+                                    
+                                    @forelse($notificationsQuery->take(20)->get() as $notification)
+                                        <div class="px-4 py-3 hover:bg-gray-100 {{ $notification->read ? '' : 'bg-blue-50' }}" 
+                                             data-notification-id="{{ $notification->id }}"
+                                             data-notification-type="{{ $notification->type }}">
+                                            <div class="flex items-start">
+                                                @if(!$notification->read)
+                                                    <span class="mt-1 mr-2 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                                @else
+                                                    <span class="mt-1 mr-2 h-2 w-2 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                                @endif
+                                                <div class="flex-1">
+                                                    <div class="flex justify-between items-start">
+                                                        <div>
+                                                            <p class="text-sm {{ $notification->read ? 'text-gray-600' : 'text-gray-900 font-medium' }}">
+                                                                @if($notification->type === 'product')
+                                                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">Product</span>
+                                                                @elseif($notification->type === 'sale')
+                                                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1">Sale</span>
+                                                                @elseif($notification->type === 'purchase')
+                                                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mr-1">Purchase</span>
+                                                                @else
+                                                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded mr-1">System</span>
+                                                                @endif
+                                                                {{ $notification->message }}
+                                                            </p>
+                                                            <div class="mt-1 flex items-center">
+                                                                <span class="text-xs text-gray-500">
+                                                                    {{ $notification->created_at->diffForHumans() }}
+                                                                    @if($notification->actionUser)
+                                                                        • By {{ $notification->actionUser->name }}
+                                                                    @endif
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        @if(!$notification->read)
+                                                            <button class="mark-as-read text-xs text-blue-600 hover:text-blue-800 ml-2" 
+                                                                    data-id="{{ $notification->id }}">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     @empty
                                         <div class="px-4 py-3 text-sm text-gray-500">
-                                            Aucune notification
+                                            No notifications found
                                         </div>
                                     @endforelse
                                 </div>
+                                <div class="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-2 text-center">
+                                    <form action="{{ route('notifications.mark-all-as-read') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-check-circle mr-1"></i> Mark all as read
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('notifications.index') }}" class="block text-xs text-blue-600 hover:text-blue-800 mt-1">
+                                        <i class="fas fa-list mr-1"></i> View all notifications
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                        @endif
 
                         <!-- User Profile Dropdown -->
                         <div class="relative">
@@ -133,16 +194,7 @@
                 </div>
             </header>
 
-            <!-- Remove the old notifications section -->
-            <nav class="bg-white border-b border-gray-200">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
-                        <!-- Empty nav, or you can add other navigation items here -->
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Scrollable Content -->
+            <!-- Main Content -->
             <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 @yield('content')
             </main>
@@ -152,6 +204,7 @@
     <script>
         // Toggle user dropdown
         document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown
             const userMenuButton = document.getElementById('user-menu-button');
             const userMenu = document.getElementById('user-menu');
 
@@ -160,36 +213,132 @@
                     userMenu.classList.toggle('hidden');
                 });
 
-                // Close dropdown when clicking outside
+                // Close when clicking outside
                 document.addEventListener('click', function(event) {
                     if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
                         userMenu.classList.add('hidden');
                     }
                 });
             }
-        });
-    </script>
 
-    @push('scripts')
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const button = document.getElementById('notification-menu-button');
-        const menu = document.getElementById('notification-menu');
+            // Notifications dropdown - Only if admin
+            @if(auth()->user()->role === 'admin')
+            const notificationButton = document.getElementById('notification-menu-button');
+            const notificationMenu = document.getElementById('notification-menu');
 
-        button.addEventListener('click', function() {
-            menu.classList.toggle('hidden');
-        });
+            if (notificationButton && notificationMenu) {
+                notificationButton.addEventListener('click', function() {
+                    notificationMenu.classList.toggle('hidden');
+                });
 
-        // Close menu when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!button.contains(event.target) && !menu.contains(event.target)) {
-                menu.classList.add('hidden');
+                // Close when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!notificationButton.contains(event.target) && !notificationMenu.contains(event.target)) {
+                        notificationMenu.classList.add('hidden');
+                    }
+                });
             }
+
+            // Mark notification as read
+            document.querySelectorAll('.mark-as-read').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const notificationId = this.getAttribute('data-id');
+                    
+                    fetch(`/notifications/${notificationId}/mark-as-read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => response.json())
+                      .then(data => {
+                          if (data.success) {
+                              // Update UI
+                              const notificationItem = this.closest('[data-notification-id]');
+                              notificationItem.classList.remove('bg-blue-50');
+                              notificationItem.querySelector('.bg-blue-500').classList.replace('bg-blue-500', 'bg-gray-300');
+                              this.remove();
+                              
+                              // Update badge count
+                              const badge = document.querySelector('.notification-badge');
+                              if (badge) {
+                                  const newCount = parseInt(badge.textContent) - 1;
+                                  if (newCount > 0) {
+                                      badge.textContent = newCount;
+                                  } else {
+                                      badge.remove();
+                                  }
+                              }
+                          }
+                      });
+                });
+            });
+
+            // Mark all as read
+            const markAllForm = document.querySelector('form[action="{{ route('notifications.mark-all-as-read') }}"]');
+            if (markAllForm) {
+                markAllForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    }).then(response => response.json())
+                      .then(data => {
+                          if (data.success) {
+                              // Update all notifications in UI
+                              document.querySelectorAll('[data-notification-id]').forEach(item => {
+                                  item.classList.remove('bg-blue-50');
+                                  const dot = item.querySelector('.bg-blue-500');
+                                  if (dot) {
+                                      dot.classList.replace('bg-blue-500', 'bg-gray-300');
+                                  }
+                                  const markButton = item.querySelector('.mark-as-read');
+                                  if (markButton) {
+                                      markButton.remove();
+                                  }
+                              });
+                              
+                              // Remove badge
+                              const badge = document.querySelector('.notification-badge');
+                              if (badge) {
+                                  badge.remove();
+                              }
+                          }
+                      });
+                });
+            }
+
+            // Filter notifications
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-blue-100', 'text-blue-800');
+                        b.classList.add('bg-gray-100', 'text-gray-800');
+                    });
+                    
+                    this.classList.remove('bg-gray-100', 'text-gray-800');
+                    this.classList.add('active', 'bg-blue-100', 'text-blue-800');
+                    
+                    const filter = this.dataset.filter;
+                    document.querySelectorAll('[data-notification-id]').forEach(notification => {
+                        if (filter === 'all' || notification.dataset.notificationType === filter) {
+                            notification.classList.remove('hidden');
+                        } else {
+                            notification.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            @endif
         });
-    });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.35.0/apexcharts.min.js"></script>
-    @endpush
 
     @yield('scripts')
 </body>

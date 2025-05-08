@@ -50,4 +50,10 @@ class User extends Authenticatable
     {
         return $this->role === 'magasin';
     }
+
+    // In app/Models/User.php
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

@@ -8,6 +8,8 @@ use App\Models\Client;
 use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Auth;
 
 class SalesController extends Controller
 {
@@ -68,7 +70,15 @@ class SalesController extends Controller
             }
 
             // Create the sale
-            Sale::create($validated);
+            $sale= Sale::create($validated);
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Sale #' . $sale->id . ' created for ' . $sale->client->name,
+                'read' => false,
+                'type' => 'sale'
+            ]);
 
             DB::commit();
             return redirect()->route('sales.index')
@@ -126,6 +136,14 @@ class SalesController extends Controller
 
             $sale->update($validated);
 
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Sale #' . $sale->id . ' Updated for ' . $sale->client->name,
+                'read' => false,
+                'type' => 'sale'
+            ]);
+
             DB::commit();
             return redirect()->route('sales.index')
                             ->with('success', 'Sale updated successfully!');
@@ -142,6 +160,14 @@ class SalesController extends Controller
         DB::beginTransaction();
         try {
             $sale->delete();
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Sale #' . $sale->id . ' Deleted for ' . $sale->client->name,
+                'read' => false,
+                'type' => 'sale'
+            ]);
             DB::commit();
             return redirect()->route('sales.index')
                             ->with('success', 'Sale deleted successfully!');

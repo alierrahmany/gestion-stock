@@ -1,5 +1,5 @@
 @if($count > 0)
-    <span class="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-full">
-        {{ $count }}
-    </span>
+<span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+    {{ $count }}
+</span>
 @endif

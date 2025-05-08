@@ -3,6 +3,7 @@
 namespace App\View\Components;
 
 use Illuminate\View\Component;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationCount extends Component
 {
@@ -10,7 +11,7 @@ class NotificationCount extends Component
 
     public function __construct()
     {
-        $this->count = auth()->user()->unreadNotifications()->count();
+        $this->count = Auth::user()->notifications()->unread()->count();
     }
 
     public function render()

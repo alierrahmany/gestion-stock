@@ -6,6 +6,8 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Auth;
 
 class ProductsController extends Controller
 {
@@ -20,12 +22,12 @@ class ProductsController extends Controller
 
         if ($request->has('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%")
-                  ->orWhereHas('category', function($q) use ($search) {
-                      $q->where('name', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhereHas('category', function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -57,7 +59,18 @@ class ProductsController extends Controller
             $validated['file_name'] = 'products/' . $filename;
         }
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        // Create notification
+        // In store/update/destroy methods
+        Notification::create([
+            'user_id' => Auth::id(),
+            'action_user_id' => Auth::id(),
+            'message' => 'Product ' . $product->name . ' was added',
+            'read' => false,
+            'type' => 'product'
+        ]);
+
         return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
 
@@ -86,6 +99,17 @@ class ProductsController extends Controller
         }
 
         $product->update($validated);
+
+        // Create notification
+        // In store/update/destroy methods
+        Notification::create([
+            'user_id' => Auth::id(),
+            'action_user_id' => Auth::id(),
+            'message' => 'Product ' . $product->name . ' was updated',
+            'read' => false,
+            'type' => 'product'
+        ]);
+
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
 
@@ -95,6 +119,17 @@ class ProductsController extends Controller
             Storage::delete('public/' . $product->file_name);
         }
         $product->delete();
+        $productName = $product->name;
+
+        // Create notification
+        Notification::create([
+            'user_id' => Auth::id(),
+            'action_user_id' => Auth::id(),
+            'message' => 'Product ' . $product->name . ' was Deleted',
+            'read' => false,
+            'type' => 'product'
+        ]);
+
         return redirect()->route('products.index')->with('success', 'Product deleted successfully');
     }
 }
