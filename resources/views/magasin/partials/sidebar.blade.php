@@ -18,6 +18,11 @@
                 Produits
             </a>
 
+            <a href="{{ route('clients.index') }}" class="@if(request()->routeIs('settings.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+                <i class="fas fa-users mr-3 text-primary-300"></i>
+                Clients
+            </a>
+
             <a href="{{ route('sales.index') }}" class="@if(request()->routeIs('sales.index')) bg-teal-700 text-white @else text-teal-200 hover:bg-teal-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
                 <i class="fas fa-list-check mr-3 text-teal-300"></i>
                 Ventes
@@ -28,8 +33,8 @@
                 Rapports
             </a>
 
-            <a href="{{ route('invoices.index') }}" class="@if(request()->routeIs('invoices.*')) bg-teal-700 text-white @else text-teal-200 hover:bg-teal-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
-                <i class="fas fa-receipt mr-3 text-teal-300"></i>
+            <a href="{{ route('documents.index') }}" class="@if(request()->routeIs('documents.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+                <i class="fas fa-file-invoice mr-3 text-primary-300"></i>
                 Factures
             </a>
         </nav>

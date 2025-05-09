@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -51,7 +52,7 @@ class UserController extends Controller
 
             return redirect()->route('users.index')->with('success', 'Utilisateur créé avec succès');
         } catch (\Exception $e) {
-            \Log::error('User creation error: ' . $e->getMessage());
+            Log::error('User creation error: ' . $e->getMessage());
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['error' => 'Error creating user. Please try again.']);

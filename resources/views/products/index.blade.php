@@ -3,8 +3,10 @@
 @section('sidebar')
     @if(auth()->user()->role === 'admin')
         @include('admin.partials.admin-sidebar')
-    @else
+    @elseif(auth()->user()->role === 'gestionnaire')
         @include('gestionnaire.partials.sidebar_gestionnaire')
+    @elseif(auth()->user()->role === 'magasin')
+        @include('magasin.partials.sidebar')
     @endif
 @endsection
 
@@ -15,9 +17,11 @@
             <h1 class="text-2xl font-bold text-gray-800">
                 <i class="fas fa-boxes mr-2 text-blue-500"></i>Gestion des Produits
             </h1>
-            <a href="{{ route('gestionnaire.products.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700">
-                <i class="fas fa-plus-circle mr-2"></i> Nouveau Produit
-            </a>
+            @if(auth()->user()->role !== 'magasin')
+                <a href="{{ route('products.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700">
+                    <i class="fas fa-plus-circle mr-2"></i> Nouveau Produit
+                </a>
+            @endif
         </div>
     </div>
 
@@ -84,7 +88,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            @if(auth()->user()->role !== 'magasin')
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
@@ -115,20 +121,22 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->created_at->format('d/m/Y') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end space-x-3">
-                                    <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
+                            @if(auth()->user()->role !== 'magasin')
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex justify-end space-x-3">
+                                        <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="inline delete-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            @endif
                         </tr>
                         @endforeach
                     </tbody>
@@ -143,7 +151,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Delete form handling
+    // Delete form handling (only for admin/gestionnaire)
+    @if(auth()->user()->role !== 'magasin')
     const deleteForms = document.querySelectorAll('.delete-form');
     if (deleteForms) {
         deleteForms.forEach(form => {
@@ -155,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    @endif
 
     // Live Search and Category Filter Implementation
     const searchInput = document.getElementById('searchInput');
@@ -205,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 message.innerHTML = `
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="{{ auth()->user()->role === 'magasin' ? '5' : '6' }}" class="px-6 py-4 text-center text-gray-500">
                         ${messageText}
                     </td>
                 `;

@@ -17,26 +17,21 @@ class Product extends Model
         'name',
         'description',
         'categorie_id',
-        'price',
-        'quantity',
         'date',
         'file_name',
     ];
 
     protected $casts = [
-        'date' => 'datetime',
-        'quantity' => 'integer',
-        'price' => 'decimal:2'
+        'date' => 'datetime'
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'current_stock', 'average_price'];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'categorie_id');
     }
 
-    // In your Product model
     public function purchases()
     {
         return $this->hasMany(Purchase::class);
@@ -47,27 +42,37 @@ class Product extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function getCurrentStockAttribute()
+    {
+        $totalPurchased = $this->purchases->sum('quantity');
+        $totalSold = $this->sales->sum('quantity');
+        return $totalPurchased - $totalSold;
+    }
+
+    public function getAveragePriceAttribute()
+    {
+        if ($this->purchases->count() > 0) {
+            return $this->purchases->avg('price');
+        }
+        return 0;
+    }
+
     public function getImageUrlAttribute()
     {
-        // Si pas d'image, retourner l'image par défaut
         if (!$this->file_name) {
             return $this->defaultImageUrl();
         }
 
-        // Si c'est déjà une URL complète (cas des anciennes données)
         if (filter_var($this->file_name, FILTER_VALIDATE_URL)) {
             return $this->file_name;
         }
 
-        // Nettoyer le chemin du fichier
         $cleanPath = ltrim($this->file_name, '/');
 
-        // Vérifier si le fichier existe
         if (Storage::disk('public')->exists($cleanPath)) {
             return asset("storage/{$cleanPath}");
         }
 
-        // Retourner l'image par défaut si le fichier n'existe pas
         return $this->defaultImageUrl();
     }
 
@@ -76,9 +81,21 @@ class Product extends Model
         return asset('storage/products/no_image.jpg');
     }
 
-    // Add this method to check low stock
     public function hasLowStock()
     {
-        return $this->quantity <= 1;
+        return $this->current_stock <= 5;
+    }
+
+    public function purchaseItems(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    /**
+     * Get all sale items for the product
+     */
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(Sale::class);
     }
 }

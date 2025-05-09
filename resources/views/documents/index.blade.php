@@ -17,7 +17,8 @@
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Documents Management</h1>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Sales Card -->
+                <!-- Show Delivery Notes for magasin and admin -->
+                @if(auth()->user()->role === 'magasin' || auth()->user()->role === 'admin')
                 <div class="bg-white border border-gray-200 rounded-lg shadow p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">
@@ -36,8 +37,10 @@
                         </a>
                     </div>
                 </div>
+                @endif
 
-                <!-- Purchases Card -->
+                <!-- Show Purchase Orders for gestionnaire and admin -->
+                @if(auth()->user()->role === 'gestionnaire' || auth()->user()->role === 'admin')
                 <div class="bg-white border border-gray-200 rounded-lg shadow p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">
@@ -56,6 +59,8 @@
                         </a>
                     </div>
                 </div>
+                @endif
+                      
             </div>
         </div>
     </div>
