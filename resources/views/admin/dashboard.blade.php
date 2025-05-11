@@ -172,6 +172,122 @@
             </div>
         </div>
 
+        <!-- Suppliers and Clients -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Total Suppliers -->
+            <div class="bg-white shadow rounded-lg overflow-hidden border-l-4 border-purple-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-truck text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Fournisseurs</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $stats['total_suppliers'] }}</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Clients -->
+            <div class="bg-white shadow rounded-lg overflow-hidden border-l-4 border-indigo-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-100 p-3 rounded-full">
+                            <i class="fas fa-users text-indigo-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Clients</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $stats['total_clients'] }}</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white shadow rounded-lg overflow-hidden border-l-4 border-blue-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Stock Total</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $stats['total_net_stock'] }}</div>
+                                    <span class="ml-2 text-sm text-gray-500">unités en stock</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Sales and Purchases Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Total Sales -->
+            <div class="bg-white shadow rounded-lg overflow-hidden border-l-4 border-blue-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Ventes</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $stats['total_products_sold'] }}</div>
+                                    <span class="ml-2 text-sm text-gray-500">produits vendus</span>
+                                </dd>
+                                <dd class="mt-1">
+                                    <div class="text-xl font-semibold text-gray-900">{{ number_format($stats['total_sales_value'], 2) }} MAD</div>
+                                    <span class="text-sm text-gray-500">valeur totale</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Purchases -->
+            <div class="bg-white shadow rounded-lg overflow-hidden border-l-4 border-green-500">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-shopping-cart text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Achats</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ $stats['total_products_purchased'] }}</div>
+                                    <span class="ml-2 text-sm text-gray-500">produits achetés</span>
+                                </dd>
+                                <dd class="mt-1">
+                                    <div class="text-xl font-semibold text-gray-900">{{ number_format($stats['total_purchases_value'], 2) }} MAD</div>
+                                    <span class="text-sm text-gray-500">valeur totale</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
         <!-- Recent Activity -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Recent Sales -->
@@ -233,9 +349,104 @@
             </div>
         </div>
 
-        <!-- Alerts and Chart -->
+        <!-- Top Products -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Top Sold Products -->
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="border-b border-gray-200 px-6 py-4 bg-blue-50">
+                    <h3 class="text-lg font-medium text-gray-900">Top 3 Produits Vendus (Tous le temps)</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    @forelse($topSoldProducts as $product)
+                    <div class="px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-blue-100 p-2 rounded-full">
+                                    <i class="fas fa-trophy text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900">{{ $product->product->name ?? 'N/A' }}</p>
+                                    <p class="text-sm text-gray-500">Quantité vendue: {{ $product->total_sold }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    #{{ $loop->iteration }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="px-6 py-4 text-center text-gray-500">
+                        Aucune vente enregistrée
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- Top Purchased Products -->
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="border-b border-gray-200 px-6 py-4 bg-green-50">
+                    <h3 class="text-lg font-medium text-gray-900">Top 3 Produits Achetés (Tous le temps)</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    @forelse($topPurchasedProducts as $product)
+                    <div class="px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-green-100 p-2 rounded-full">
+                                    <i class="fas fa-trophy text-green-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900">{{ $product->product->name ?? 'N/A' }}</p>
+                                    <p class="text-sm text-gray-500">Quantité achetée: {{ $product->total_purchased }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    #{{ $loop->iteration }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="px-6 py-4 text-center text-gray-500">
+                        Aucun achat enregistré
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Low Stock Alerts -->
+            <!-- Sales Chart -->
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="border-b border-gray-200 px-6 py-4 bg-blue-50">
+                    <h3 class="text-lg font-medium text-gray-900">Activité des Ventes (12 derniers mois)</h3>
+                </div>
+                <div class="p-6">
+                    <div class="chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="salesChart" style="height:300px; width:100%"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purchases Chart -->
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="border-b border-gray-200 px-6 py-4 bg-green-50">
+                    <h3 class="text-lg font-medium text-gray-900">Activité des Achats (12 derniers mois)</h3>
+                </div>
+                <div class="p-6">
+                    <div class="chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="purchasesChart" style="height:300px; width:100%"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        <div class="mt-6">
             <div class="bg-white shadow rounded-lg overflow-hidden">
                 <div class="border-b border-gray-200 px-6 py-4 bg-yellow-50">
                     <h3 class="text-lg font-medium text-gray-900">Alertes Stock Faible</h3>
@@ -267,17 +478,45 @@
                     @endforelse
                 </div>
             </div>
+        </div>
 
-            <!-- Sales Chart - Fixed Size Container -->
-            <div class="bg-white shadow rounded-lg overflow-hidden">
-                <div class="border-b border-gray-200 px-6 py-4 bg-blue-50">
-                    <h3 class="text-lg font-medium text-gray-900">Activité des Ventes (30 jours)</h3>
-                </div>
-                <div class="p-6">
-                    <div class="chart-container" style="position: relative; height:300px; width:100%">
-                        <canvas id="salesChart" style="height:300px; width:100%"></canvas>
+        <!-- Out of Stock Products -->
+        <div class="bg-white shadow rounded-lg overflow-hidden mt-6">
+            <div class="border-b border-gray-200 px-6 py-4 bg-red-50">
+                <h3 class="text-lg font-medium text-gray-900">Produits en Rupture de Stock</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ $stats['out_of_stock_products'] }} produits actuellement en rupture</p>
+            </div>
+            <div class="divide-y divide-gray-200">
+                @forelse($outOfStockProducts as $item)
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-red-100 p-2 rounded-full">
+                                <i class="fas fa-times-circle text-red-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900">{{ $item->product->name }}</p>
+                                <p class="text-sm text-gray-500">
+                                    @if($item->product->category)
+                                        Catégorie: {{ $item->product->category->name }}
+                                    @else
+                                        <span class="text-gray-400">Non classé</span>
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                Rupture
+                            </span>
+                        </div>
                     </div>
                 </div>
+                @empty
+                <div class="px-6 py-4 text-center text-gray-500">
+                    Aucun produit en rupture de stock
+                </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -287,10 +526,10 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Sales Chart with fixed dimensions
+    // Sales Chart
     document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        const salesChart = new Chart(ctx, {
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(salesCtx, {
             type: 'line',
             data: {
                 labels: @json($salesChart['labels']),
@@ -320,6 +559,63 @@
                         callbacks: {
                             label: function(context) {
                                 return context.parsed.y + ' ventes';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                if (Number.isInteger(value)) {
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Purchases Chart
+        const purchasesCtx = document.getElementById('purchasesChart').getContext('2d');
+        const purchasesChart = new Chart(purchasesCtx, {
+            type: 'line',
+            data: {
+                labels: @json($purchasesChart['labels']),
+                datasets: [{
+                    label: 'Nombre d\'Achats',
+                    data: @json($purchasesChart['data']),
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' achats';
                             }
                         }
                     }

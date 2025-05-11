@@ -33,16 +33,21 @@
                 Achats
             </a>
 
-            <a href="{{ route('documents.index') }}" class="@if(request()->routeIs('documents.*')) bg-primary-700 text-white @else text-primary-200 hover:bg-primary-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+            <a href="{{ route('documents.index') }}" class="@if(request()->routeIs('documents.*')) bg-blue-700 text-white @else text-blue-200 hover:bg-blue-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
                 <i class="fas fa-file-invoice mr-3 text-primary-300"></i>
                 Factures
+            </a>
+
+            <a href="{{ route('reports.index') }}" class="@if(request()->routeIs('reports.*')) bg-blue-700 text-white @else text-blue-200 hover:bg-blue-700 hover:text-white @endif group flex items-center px-4 py-3 rounded-lg transition-all duration-200">
+                <i class="fas fa-chart-line mr-3 text-teal-300"></i>
+                Rapports
             </a>
         </nav>
     </div>
 
     <div class="p-4 border-t border-blue-700">
         <div class="flex items-center">
-            
+
         </div>
     </div>
 </div>

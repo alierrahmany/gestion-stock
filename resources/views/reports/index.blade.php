@@ -28,21 +28,27 @@
                     <div>
                         <label for="report_type" class="block text-sm font-medium text-gray-700">Report Type</label>
                         <select id="report_type" name="report_type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                            <option value="sales" {{ request('report_type') == 'sales' ? 'selected' : '' }}>Sales Report</option>
-                            <option value="purchases" {{ request('report_type') == 'purchases' ? 'selected' : '' }}>Purchases Report</option>
+                            @if(auth()->user()->role === 'admin')
+                                <option value="sales" {{ request('report_type') == 'sales' ? 'selected' : '' }}>Sales Report</option>
+                                <option value="purchases" {{ request('report_type') == 'purchases' ? 'selected' : '' }}>Purchases Report</option>
+                            @elseif(auth()->user()->role === 'gestionnaire')
+                                <option value="purchases" {{ request('report_type') == 'purchases' ? 'selected' : '' }}>Purchases Report</option>
+                            @elseif(auth()->user()->role === 'magasin')
+                                <option value="sales" {{ request('report_type') == 'sales' ? 'selected' : '' }}>Sales Report</option>
+                            @endif
                         </select>
                     </div>
-                    
+
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
-                        <input type="date" name="start_date" id="start_date" 
+                        <input type="date" name="start_date" id="start_date"
                                value="{{ request('start_date', now()->subMonth()->format('Y-m-d')) }}"
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
-                    
+
                     <div>
                         <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
-                        <input type="date" name="end_date" id="end_date" 
+                        <input type="date" name="end_date" id="end_date"
                                value="{{ request('end_date', now()->format('Y-m-d')) }}"
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
@@ -60,7 +66,7 @@
                             @endforeach
                         </select>
                     </div>
-                    
+
                     <div class="flex items-end">
                         <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <i class="fas fa-search mr-2"></i> Generate Report
@@ -226,7 +232,7 @@
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div id="topProductsChart"></div>
-                            
+
                             <!-- Table with Details -->
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">

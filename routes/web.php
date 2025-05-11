@@ -35,6 +35,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/users/{user}/update-image', [UserController::class, 'updateImage'])->name('users.update-image');
+
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
+    Route::get('/reports/export/{format}', [ReportsController::class, 'export'])->name('reports.export');
 });
 
 // Notification Routes
@@ -89,7 +93,7 @@ Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
         'destroy' => 'products.destroy',
     ]);
     Route::resource('purchases', PurchaseController::class)->except(['show']);
-    
+
     // Purchase Documents accessible to both admin and gestionnaire
     Route::prefix('documents')->group(function () {
         Route::get('/purchases', [DocumentsController::class, 'purchases'])->name('documents.purchases');
@@ -98,6 +102,7 @@ Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
         Route::get('/purchases/print-all', [DocumentsController::class, 'printAllPurchases'])
              ->name('documents.purchases.print-all');
     });
+
 });
 
 // Shared Routes for Admin & Magasin
@@ -106,14 +111,11 @@ Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
     Route::get('sales/stock/{product}', [SalesController::class, 'getAvailableStock']);
     Route::get('sales/report', [SalesController::class, 'report'])->name('sales.report');
 
-    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
-    Route::get('/reports/generate', [ReportsController::class, 'generate'])->name('reports.generate');
-    Route::get('/reports/export/{format}', [ReportsController::class, 'export'])->name('reports.export');
 
     Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{sale}', [InvoicesController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{sale}/download', [InvoicesController::class, 'download'])->name('invoices.download');
-    
+
     // Delivery Documents accessible to both admin and magasin
     Route::prefix('documents')->group(function () {
         Route::get('/sales', [DocumentsController::class, 'sales'])->name('documents.sales');
