@@ -44,6 +44,21 @@
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border">
                         </div>
 
+                        <!-- Password (optional) -->
+                        <div class="sm:col-span-6">
+                            <label for="password" class="block text-sm font-medium text-gray-700">
+                                <i class="fas fa-lock mr-1 text-gray-500"></i>New Password (leave blank to keep current)
+                            </label>
+                            <div class="mt-1 relative">
+                                <input type="password" name="password" id="password"
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border pr-10">
+                                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                                    onclick="togglePassword('password')">
+                                    <i class="far fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Role -->
                         <div class="sm:col-span-3">
                             <label for="role" class="block text-sm font-medium text-gray-700">
@@ -64,8 +79,8 @@
                             </label>
                             <select id="status" name="status" required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border">
-                                <option value="active" {{ $user->status === 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ $user->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                <option value="1" {{ $user->status == 1 ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ $user->status == 0 ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
 
@@ -77,21 +92,24 @@
                             <div class="mt-1 flex items-center space-x-4">
                                 <div class="flex-shrink-0 h-24 w-24">
                                     <img id="image-preview" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200"
-                                        src="{{ $user->image && $user->image != 'no_image.jpg' 
-                                            ? asset('storage/profile_images/'.$user->image) 
-                                            : asset('storage/profile_images/no_image.jpg') }}" 
+                                        src="{{ $user->image && $user->image != 'no_image.jpg'
+                                            ? asset('storage/profile_images/'.$user->image)
+                                            : asset('storage/profile_images/no_image.jpg') }}"
                                         alt="Profile preview">
                                 </div>
                                 <div class="relative">
                                     <input type="file" name="image" id="image" accept="image/*"
                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         onchange="previewImage(this)">
-                                    <button type="button" 
+                                    <button type="button"
                                         class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-white hover:bg-gray-700">
                                         <i class="fas fa-camera mr-2"></i> Change Photo
                                     </button>
                                 </div>
                             </div>
+                            @if ($errors->has('image'))
+                                <span class="text-red-500 text-sm">{{ $errors->first('image') }}</span>
+                            @endif
                             <p class="mt-2 text-sm text-gray-500">Maximum file size: 2MB. Recommended: Square image.</p>
                         </div>
                     </div>
@@ -113,14 +131,26 @@
 </div>
 
 <script>
+function togglePassword(id) {
+    const input = document.getElementById(id);
+    const icon = input.nextElementSibling.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
 function previewImage(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        
+
         reader.onload = function(e) {
             document.getElementById('image-preview').src = e.target.result;
         }
-        
+
         reader.readAsDataURL(input.files[0]);
     }
 }

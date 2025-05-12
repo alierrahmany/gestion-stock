@@ -21,8 +21,7 @@ class ReportsController extends Controller
 
     public function generate(Request $request)
     {
-
-                $validTypes = [];
+        $validTypes = [];
 
         if (Auth::user()->role === 'admin') {
             $validTypes = ['sales', 'purchases'];
@@ -38,7 +37,6 @@ class ReportsController extends Controller
             'product_id' => 'nullable|exists:products,id',
             'report_type' => ['required', 'in:'.implode(',', $validTypes)],
         ]);
-
 
         $products = Product::all();
         $startDate = Carbon::parse($request->start_date)->startOfDay();
@@ -136,32 +134,92 @@ class ReportsController extends Controller
             $query->where('product_id', $productId);
         }
 
-        $results = $query->selectRaw('
-            DATE(date) as date,
-            SUM(quantity * price) as total,
-            COUNT(*) as count
-        ')
-            ->groupBy('date')
-            ->orderBy('date')
+        $dateDiff = $startDate->diffInDays($endDate);
+
+        if ($dateDiff <= 31) {
+            // Daily grouping
+            $results = $query->selectRaw('
+                DATE(date) as date_group,
+                SUM(quantity * price) as total_amount,
+                SUM(quantity) as total_quantity
+            ')
+            ->groupBy('date_group')
+            ->orderBy('date_group')
             ->get();
 
-        $labels = [];
-        $data = [];
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $dateStr = $currentDate->format('Y-m-d');
+                $labels[] = $currentDate->format('M d');
 
-        $currentDate = clone $startDate;
-        while ($currentDate <= $endDate) {
-            $dateStr = $currentDate->format('Y-m-d');
-            $labels[] = $currentDate->format('M d');
+                $found = $results->firstWhere('date_group', $dateStr);
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
 
-            $found = $results->firstWhere('date', $dateStr);
-            $data[] = $found ? (float)$found->total : 0;
+                $currentDate->addDay();
+            }
+        } elseif ($dateDiff <= 365) {
+            // Weekly grouping
+            $results = $query->selectRaw('
+                YEAR(date) as year,
+                WEEK(date) as week,
+                SUM(quantity * price) as total_amount,
+                SUM(quantity) as total_quantity
+            ')
+            ->groupBy('year', 'week')
+            ->orderBy('year')
+            ->orderBy('week')
+            ->get();
 
-            $currentDate->addDay();
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $year = $currentDate->format('Y');
+                $week = $currentDate->weekOfYear;
+                $labels[] = 'W' . $week . ' ' . $year;
+
+                $found = $results->first(function ($item) use ($year, $week) {
+                    return $item->year == $year && $item->week == $week;
+                });
+
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
+
+                $currentDate->addWeek();
+            }
+        } else {
+            // Monthly grouping
+            $results = $query->selectRaw('
+                YEAR(date) as year,
+                MONTH(date) as month,
+                SUM(quantity * price) as total_amount,
+                SUM(quantity) as total_quantity
+            ')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $year = $currentDate->format('Y');
+                $month = $currentDate->month;
+                $labels[] = $currentDate->format('M Y');
+
+                $found = $results->first(function ($item) use ($year, $month) {
+                    return $item->year == $year && $item->month == $month;
+                });
+
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
+
+                $currentDate->addMonth();
+            }
         }
 
         return [
-            'labels' => $labels,
-            'data' => $data,
+            'labels' => $labels ?? [],
+            'data' => $data ?? [],
+            'quantities' => $quantities ?? [],
             'currency' => 'DH'
         ];
     }
@@ -184,6 +242,8 @@ class ReportsController extends Controller
                 SUM(quantity * price) as total_amount
             ')
             ->groupBy('product_id')
+            ->having('total_quantity', '>', 0)
+            ->having('total_amount', '>', 0)
             ->orderByDesc('total_quantity')
             ->limit($limit)
             ->get()
@@ -212,7 +272,7 @@ class ReportsController extends Controller
             fputcsv($file, ['*** ' . strtoupper($reportData['report_type']) . ' REPORT ***']);
             fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')]);
             fputcsv($file, ['Date Range: ' . $reportData['filters']['start_date'] . ' to ' . $reportData['filters']['end_date']]);
-            fputcsv($file, []); // Empty row
+            fputcsv($file, []);
 
             // Summary Section
             fputcsv($file, ['=== SUMMARY ===']);
@@ -232,7 +292,7 @@ class ReportsController extends Controller
                 fputcsv($file, ['Items Purchased:', $totalQuantity]);
             }
 
-            fputcsv($file, []); // Empty row
+            fputcsv($file, []);
 
             // Transactions Header
             fputcsv($file, ['=== TRANSACTION DETAILS ===']);

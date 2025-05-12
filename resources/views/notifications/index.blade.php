@@ -33,23 +33,23 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <!-- Filter Buttons -->
         <div class="mb-4 flex space-x-2 overflow-x-auto pb-2">
-            <a href="{{ route('notifications.index', ['filter' => 'all']) }}" 
+            <a href="{{ route('notifications.index', ['filter' => 'all']) }}"
                class="px-3 py-1 text-xs rounded-full {{ request('filter') === 'all' || !request('filter') ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
                 All
             </a>
-            <a href="{{ route('notifications.index', ['filter' => 'product']) }}" 
+            <a href="{{ route('notifications.index', ['filter' => 'product']) }}"
                class="px-3 py-1 text-xs rounded-full {{ request('filter') === 'product' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
                 Products
             </a>
-            <a href="{{ route('notifications.index', ['filter' => 'sale']) }}" 
+            <a href="{{ route('notifications.index', ['filter' => 'sale']) }}"
                class="px-3 py-1 text-xs rounded-full {{ request('filter') === 'sale' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                 Sales
             </a>
-            <a href="{{ route('notifications.index', ['filter' => 'purchase']) }}" 
+            <a href="{{ route('notifications.index', ['filter' => 'purchase']) }}"
                class="px-3 py-1 text-xs rounded-full {{ request('filter') === 'purchase' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
                 Purchases
             </a>
-            <a href="{{ route('notifications.index', ['filter' => 'unread']) }}" 
+            <a href="{{ route('notifications.index', ['filter' => 'unread']) }}"
                class="px-3 py-1 text-xs rounded-full {{ request('filter') === 'unread' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800' }}">
                 Unread Only
             </a>
@@ -98,7 +98,7 @@
                                         </button>
                                     </form>
                                 @endif
-                                <button onclick="showDeleteModal({{ $notification->id }})" 
+                                <button onclick="showDeleteModal({{ $notification->id }})"
                                         class="text-xs text-red-600 hover:text-red-800">
                                     Delete
                                 </button>

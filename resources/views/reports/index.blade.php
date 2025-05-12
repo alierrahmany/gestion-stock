@@ -208,57 +208,80 @@
             </div>
 
             <!-- Trend Chart -->
-            @if(isset($chartData) && count($chartData['labels']) > 0)
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div class="bg-white shadow rounded-lg overflow-hidden">
-                    <div class="p-6">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                            {{ request('report_type') == 'sales' ? 'Sales' : 'Purchases' }} Trend
-                        </h2>
-                        <div id="trendChart"></div>
-                    </div>
+    @if(isset($chartData) && count($chartData['labels']) > 0)
+    <div class="bg-white shadow rounded-lg overflow-hidden mt-6">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                {{ request('report_type') == 'sales' ? 'Sales' : 'Purchases' }} Trend
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-md font-medium text-gray-700 mb-2">Amount (DH)</h3>
+                    <canvas id="amountTrendChart" height="350"></canvas>
+                </div>
+                <div>
+                    <h3 class="text-md font-medium text-gray-700 mb-2">Quantity</h3>
+                    <canvas id="quantityTrendChart" height="350"></canvas>
                 </div>
             </div>
-            @endif
+        </div>
+    </div>
+    @endif
 
-            <!-- Top Products Section -->
-            @if(isset($topProducts) && count($topProducts) > 0)
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-                <div class="bg-white shadow rounded-lg overflow-hidden">
-                    <div class="p-6">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                            Top {{ request('report_type') == 'sales' ? 'Sold' : 'Purchased' }} Products
-                            ({{ $filters['start_date'] }} to {{ $filters['end_date'] }})
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div id="topProductsChart"></div>
+    <!-- Top Products Section -->
+    @if(isset($topProducts) && count($topProducts) > 0)
+    <div class="bg-white shadow rounded-lg overflow-hidden mt-6">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                Top {{ request('report_type') == 'sales' ? 'Sold' : 'Purchased' }} Products
+                ({{ $filters['start_date'] }} to {{ $filters['end_date'] }})
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <canvas id="topProductsChart" height="350"></canvas>
+                </div>
 
-                            <!-- Table with Details -->
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        @foreach($topProducts as $product)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $product['name'] }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product['quantity'] }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($product['amount'], 2) }} DH</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Table with Details -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @php
+                                $totalQuantity = $topProducts->sum('quantity');
+                                $totalAmount = $topProducts->sum('amount');
+                            @endphp
+                            @foreach($topProducts as $product)
+                            @if($product['quantity'] > 0 && $product['amount'] > 0)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $product['name'] }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product['quantity'] }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($product['amount'], 2) }} DH</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $totalAmount > 0 ? number_format(($product['amount'] / $totalAmount) * 100, 1) : 0 }}%
+                                </td>
+                            </tr>
+                            @endif
+                            @endforeach
+                            <tr class="bg-gray-50 font-semibold">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Total</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $totalQuantity }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($totalAmount, 2) }} DH</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            @endif
+        </div>
+    </div>
+    @endif
         @else
             <div class="bg-white shadow rounded-lg p-6 text-center text-gray-500">
                 <i class="fas fa-chart-bar text-4xl mb-4 text-gray-300"></i>
@@ -268,172 +291,179 @@
     </div>
 </div>
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.css">
-@endpush
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Trend Chart
+    // Amount Trend Chart
     @if(isset($chartData) && count($chartData['labels']) > 0)
     try {
-        const trendOptions = {
-            series: [{
-                name: '{{ request('report_type') == 'sales' ? 'Sales' : 'Purchases' }} Amount',
-                data: @json($chartData['data'])
-            }],
-            chart: {
-                type: 'area',
-                height: 350,
-                zoom: {
-                    enabled: false
+        const amountCtx = document.getElementById('amountTrendChart').getContext('2d');
+        const amountChart = new Chart(amountCtx, {
+            type: 'line',
+            data: {
+                labels: @json($chartData['labels']),
+                datasets: [{
+                    label: '{{ request('report_type') == 'sales' ? 'Sales' : 'Purchases' }} Amount (DH)',
+                    data: @json($chartData['data']),
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toFixed(2) + ' DH';
+                            }
+                        }
+                    }
                 },
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: true,
-                        selection: false,
-                        zoom: false,
-                        zoomin: false,
-                        zoomout: false,
-                        pan: false,
-                        reset: false
-                    }
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2
-            },
-            colors: ['#3b82f6'],
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.3,
-                }
-            },
-            xaxis: {
-                categories: @json($chartData['labels']),
-                labels: {
-                    style: {
-                        colors: '#6b7280',
-                        fontSize: '12px'
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function(value) {
-                        return value + ' DH';
-                    },
-                    style: {
-                        colors: '#6b7280',
-                        fontSize: '12px'
-                    }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function(value) {
-                        return value.toFixed(2) + ' DH';
-                    }
-                }
-            },
-            grid: {
-                borderColor: '#e5e7eb',
-                strokeDashArray: 4,
-                yaxis: {
-                    lines: {
-                        show: true
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' DH';
+                            }
+                        }
                     }
                 }
             }
-        };
-
-        const trendChart = new ApexCharts(document.querySelector("#trendChart"), trendOptions);
-        trendChart.render();
+        });
     } catch (error) {
-        console.error('Error rendering trend chart:', error);
+        console.error('Error rendering amount trend chart:', error);
+    }
+
+    // Quantity Trend Chart
+    try {
+        const quantityCtx = document.getElementById('quantityTrendChart').getContext('2d');
+        const quantityChart = new Chart(quantityCtx, {
+            type: 'bar',
+            data: {
+                labels: @json($chartData['labels']),
+                datasets: [{
+                    label: '{{ request('report_type') == 'sales' ? 'Sales' : 'Purchases' }} Quantity',
+                    data: @json($chartData['quantities']),
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error rendering quantity trend chart:', error);
     }
     @endif
 
     // Top Products Chart
     @if(isset($topProducts) && count($topProducts) > 0)
     try {
-        const topProductsOptions = {
-            series: [{
-                name: 'Quantity',
-                data: @json(array_column($topProducts->toArray(), 'quantity'))
-            }],
-            chart: {
-                type: 'bar',
-                height: 350,
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: true
+        const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+        const topProductsChart = new Chart(topProductsCtx, {
+            type: 'bar',
+            data: {
+                labels: @json(array_column($topProducts->toArray(), 'name')),
+                datasets: [
+                    {
+                        label: 'Quantity',
+                        data: @json(array_column($topProducts->toArray(), 'quantity')),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Amount (DH)',
+                        data: @json(array_column($topProducts->toArray(), 'amount')),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        type: 'line',
+                        yAxisID: 'y1'
                     }
-                }
+                ]
             },
-            plotOptions: {
-                bar: {
-                    borderRadius: 4,
-                    horizontal: false,
-                    columnWidth: '55%',
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            colors: ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ef4444'],
-            xaxis: {
-                categories: @json(array_column($topProducts->toArray(), 'name')),
-                labels: {
-                    style: {
-                        colors: '#6b7280',
-                        fontSize: '12px'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.dataset.yAxisID === 'y1') {
+                                    label += context.raw.toFixed(2) + ' DH';
+                                } else {
+                                    label += context.raw;
+                                }
+                                return label;
+                            }
+                        }
                     }
-                }
-            },
-            yaxis: {
-                labels: {
-                    style: {
-                        colors: '#6b7280',
-                        fontSize: '12px'
-                    }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function(value, { dataPointIndex }) {
-                        const amount = @json(array_column($topProducts->toArray(), 'amount'))[dataPointIndex];
-                        return [
-                            'Quantity: ' + value,
-                            'Total: ' + amount.toFixed(2) + ' DH'
-                        ].join('<br>');
-                    }
-                }
-            },
-            grid: {
-                borderColor: '#e5e7eb',
-                strokeDashArray: 4,
-                yaxis: {
-                    lines: {
-                        show: true
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Amount (DH)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(2);
+                            }
+                        }
                     }
                 }
             }
-        };
-
-        const topProductsChart = new ApexCharts(document.querySelector("#topProductsChart"), topProductsOptions);
-        topProductsChart.render();
+        });
     } catch (error) {
         console.error('Error rendering top products chart:', error);
     }

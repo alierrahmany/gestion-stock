@@ -15,7 +15,7 @@ class NotificationsController extends Controller
 public function index(Request $request)
 {
     // Base query
-    $query = Auth::user()->role === 'admin' 
+    $query = Auth::user()->role === 'admin'
         ? Notification::with('actionUser')->latest()
         : Auth::user()->notifications()->with('actionUser')->latest();
 

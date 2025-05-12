@@ -30,11 +30,16 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', 'string', 'in:admin,gestionnaire,magasin'],
-            'status' => ['required', 'in:active,inactive'],
+            'status' => ['required', 'in:0,1'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048']
         ]);
 
         try {
+            // Ensure directory exists
+            if (!Storage::disk('public')->exists('profile_images')) {
+                Storage::disk('public')->makeDirectory('profile_images');
+            }
+
             $imageName = 'no_image.jpg';
             if ($request->hasFile('image')) {
                 $imageName = time().'.'.$request->image->extension();
@@ -50,7 +55,7 @@ class UserController extends Controller
                 'image' => $imageName
             ]);
 
-            return redirect()->route('users.index')->with('success', 'Utilisateur créé avec succès');
+            return redirect()->route('users.index')->with('success', 'User created successfully');
         } catch (\Exception $e) {
             Log::error('User creation error: ' . $e->getMessage());
             return redirect()->back()
@@ -70,7 +75,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'role' => ['required', 'in:admin,gestionnaire,magasin'],
-            'status' => ['required', 'in:active,inactive'],
+            'status' => ['required', 'in:0,1'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048']
         ]);
 
@@ -88,8 +93,13 @@ class UserController extends Controller
             $data['image'] = $imageName;
         }
 
+        // Update password if provided
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
         $user->update($data);
-        return redirect()->route('users.index')->with('success', 'Utilisateur mis à jour avec succès');
+        return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
     public function destroy(User $user)
@@ -98,6 +108,6 @@ class UserController extends Controller
             Storage::disk('public')->delete('profile_images/' . $user->image);
         }
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'Utilisateur supprimé avec succès');
+        return redirect()->route('users.index')->with('success', 'User deleted successfully');
     }
 }

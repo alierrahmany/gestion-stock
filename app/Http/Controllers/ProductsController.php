@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProductsController extends Controller
 {
@@ -24,7 +26,6 @@ class ProductsController extends Controller
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
-                    ->orWhere('description', 'LIKE', "%{$search}%")
                     ->orWhereHas('category', function ($q) use ($search) {
                         $q->where('name', 'LIKE', "%{$search}%");
                     });
@@ -41,37 +42,49 @@ class ProductsController extends Controller
         return view('products.create', compact('categories'));
     }
 
-    public function store(Request $request)
+     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'categorie_id' => 'required|exists:categories,id',
-            'file_name' => 'nullable|image|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        // Add current date
-        $validated['date'] = now();
+        try {
+            // Ensure directory exists
+            if (!Storage::disk('public')->exists('products')) {
+                Storage::disk('public')->makeDirectory('products');
+            }
 
-        if ($request->hasFile('file_name')) {
-            $file = $request->file('file_name');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('public/products', $filename);
-            $validated['file_name'] = 'products/' . $filename;
+            $imageName = 'no_image.jpg';
+            if ($request->hasFile('image')) {
+                $imageName = time().'_'.Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$request->image->extension();
+                $request->image->storeAs('products', $imageName, 'public');
+            }
+
+            $product = Product::create([
+                'name' => $request->name,
+                'categorie_id' => $request->categorie_id,
+                'date' => now(),
+                'file_name' => $imageName
+            ]);
+
+            // Create notification
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => 'Product ' . $product->name . ' was added',
+                'read' => false,
+                'type' => 'product'
+            ]);
+
+            return redirect()->route('products.index')->with('success', 'Product created successfully');
+        } catch (\Exception $e) {
+            Log::error('Product creation error: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error creating product. Please try again.']);
         }
-
-        $product = Product::create($validated);
-
-        // Create notification
-        // In store/update/destroy methods
-        Notification::create([
-            'user_id' => Auth::id(),
-            'action_user_id' => Auth::id(),
-            'message' => 'Product ' . $product->name . ' was added',
-            'read' => false,
-            'type' => 'product'
-        ]);
-
-        return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
 
     public function edit(Product $product)
@@ -82,26 +95,32 @@ class ProductsController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'categorie_id' => 'required|exists:categories,id',
-            'file_name' => 'nullable|image|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        if ($request->hasFile('file_name')) {
-            if ($product->file_name) {
-                Storage::delete('public/' . $product->file_name);
+        $data = [
+            'name' => $request->name,
+            'categorie_id' => $request->categorie_id
+        ];
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists and not default
+            if ($product->file_name && $product->file_name !== 'no_image.jpg') {
+                Storage::disk('public')->delete('products/' . $product->file_name);
             }
-            $file = $request->file('file_name');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('public/products', $filename);
-            $validated['file_name'] = 'products/' . $filename;
+
+            // Store new image
+            $imageName = time().'_'.Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$request->image->extension();
+            $request->image->storeAs('products', $imageName, 'public');
+            $data['file_name'] = $imageName;
         }
 
-        $product->update($validated);
+        $product->update($data);
 
         // Create notification
-        // In store/update/destroy methods
         Notification::create([
             'user_id' => Auth::id(),
             'action_user_id' => Auth::id(),
@@ -115,17 +134,18 @@ class ProductsController extends Controller
 
     public function destroy(Product $product)
     {
-        if ($product->file_name) {
-            Storage::delete('public/' . $product->file_name);
+        if ($product->file_name && $product->file_name !== 'no_image.jpg') {
+            Storage::disk('public')->delete('product_images/' . $product->file_name);
         }
-        $product->delete();
+
         $productName = $product->name;
+        $product->delete();
 
         // Create notification
         Notification::create([
             'user_id' => Auth::id(),
             'action_user_id' => Auth::id(),
-            'message' => 'Product ' . $product->name . ' was Deleted',
+            'message' => 'Product ' . $productName . ' was deleted',
             'read' => false,
             'type' => 'product'
         ]);

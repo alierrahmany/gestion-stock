@@ -19,7 +19,7 @@ use App\Http\Controllers\DocumentsController;
 use App\Http\Controllers\ClientController;
 
 // Redirect to login
-Route::get('/', fn () => redirect()->route('login'));
+Route::get('/', fn() => redirect()->route('login'));
 
 // Authentication
 Route::middleware('guest')->group(function () {
@@ -41,13 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export/{format}', [ReportsController::class, 'export'])->name('reports.export');
 });
 
-// Notification Routes
-Route::prefix('notifications')->group(function () {
-    Route::get('/', [NotificationsController::class, 'index'])->name('notifications.index');
-    Route::post('/{notification}/mark-as-read', [NotificationsController::class, 'markAsRead'])->name('notifications.mark-as-read');
-    Route::post('/mark-all-as-read', [NotificationsController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
-    Route::delete('/{notification}', [NotificationsController::class, 'destroy'])->name('notifications.destroy');
-});
+
 
 // Magasin Routes
 Route::middleware(['auth', 'magasin'])->group(function () {
@@ -78,6 +72,14 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         'update'  => 'users.update',
         'destroy' => 'users.destroy',
     ]);
+
+    // Notification Routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationsController::class, 'index'])->name('notifications.index');
+        Route::post('/{notification}/mark-as-read', [NotificationsController::class, 'markAsRead'])->name('notifications.mark-as-read');
+        Route::post('/mark-all-as-read', [NotificationsController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+        Route::delete('/{notification}', [NotificationsController::class, 'destroy'])->name('notifications.destroy');
+    });
 });
 
 // Shared Routes for Admin & Gestionnaire
@@ -98,11 +100,10 @@ Route::middleware(['auth', 'role:admin,gestionnaire'])->group(function () {
     Route::prefix('documents')->group(function () {
         Route::get('/purchases', [DocumentsController::class, 'purchases'])->name('documents.purchases');
         Route::get('/purchases/{purchase}/download', [DocumentsController::class, 'downloadPurchaseOrder'])
-             ->name('documents.purchase-order.download');
+            ->name('documents.purchase-order.download');
         Route::get('/purchases/print-all', [DocumentsController::class, 'printAllPurchases'])
-             ->name('documents.purchases.print-all');
+            ->name('documents.purchases.print-all');
     });
-
 });
 
 // Shared Routes for Admin & Magasin
@@ -120,15 +121,16 @@ Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
     Route::prefix('documents')->group(function () {
         Route::get('/sales', [DocumentsController::class, 'sales'])->name('documents.sales');
         Route::get('/sales/{sale}/download', [DocumentsController::class, 'downloadDeliveryNote'])
-             ->name('documents.delivery-note.download');
+            ->name('documents.delivery-note.download');
         Route::get('/sales/print-all', [DocumentsController::class, 'printAllSales'])
-             ->name('documents.sales.print-all');
+            ->name('documents.sales.print-all');
     });
 
     Route::resource('clients', ClientController::class)->middleware('auth');
 
     Route::resource('products', ProductsController::class)->names([
-        'index'   => 'products.index']);
+        'index'   => 'products.index'
+    ]);
 });
 
 // Documents index accessible to all authenticated users

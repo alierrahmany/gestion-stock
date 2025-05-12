@@ -18,6 +18,7 @@ class User extends Authenticatable
         'role',
         'status',
         'image',
+        'last_login'
     ];
 
     const ROLES = ['admin', 'gestionnaire', 'magasin'];
@@ -29,6 +30,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login' => 'datetime',
     ];
 
     /**

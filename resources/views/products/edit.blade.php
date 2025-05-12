@@ -1,4 +1,5 @@
 @extends('layouts.app')
+
 @section('sidebar')
     @if(auth()->user()->role === 'admin')
         @include('admin.partials.admin-sidebar')
@@ -8,6 +9,7 @@
         @include('magasin.partials.sidebar')
     @endif
 @endsection
+
 @section('content')
 <div class="flex-1 overflow-auto ml-64">
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -20,20 +22,20 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <form action="{{ route('products.update', $product) }}" method="POST" enctype="multipart/form-data" class="p-6" id="edit-form">
+            <form action="{{ route('products.update', $product) }}" method="POST" enctype="multipart/form-data" class="p-6">
                 @csrf
                 @method('PUT')
                 <div class="grid grid-cols-6 gap-6">
                     <div class="col-span-6 sm:col-span-3">
-                        <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
-                        <input type="text" name="name" id="name" value="{{ old('name', $product->name) }}"
+                        <label for="name" class="block text-sm font-medium text-gray-700">Product Name *</label>
+                        <input type="text" name="name" id="name" value="{{ old('name', $product->name) }}" required
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         @error('name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="col-span-6 sm:col-span-3">
-                        <label for="categorie_id" class="block text-sm font-medium text-gray-700">Category</label>
-                        <select name="categorie_id" id="categorie_id"
+                        <label for="categorie_id" class="block text-sm font-medium text-gray-700">Category *</label>
+                        <select name="categorie_id" id="categorie_id" required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ old('categorie_id', $product->categorie_id) == $category->id ? 'selected' : '' }}>
@@ -46,16 +48,19 @@
 
                     <div class="col-span-6">
                         <label class="block text-sm font-medium text-gray-700">Current Image</label>
-                        <div class="mt-2">
-                            <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-32 h-32 object-cover rounded-md">
+                        <div class="mt-1 flex items-center">
+                            <div class="mr-4 flex-shrink-0">
+                                <img id="image-preview" src="{{ isset($product) ? $product->image_url : asset('images/default-product.png') }}"
+                                    class="h-32 w-32 rounded-md object-cover border">
+                            </div>
+                            <div>
+                                <input type="file" name="image" id="image" accept="image/*"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    onchange="previewImage(this)">
+                                <p class="mt-1 text-xs text-gray-500">JPEG, PNG, JPG, GIF (Max 2MB)</p>
+                                @error('image')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="col-span-6">
-                        <label for="file_name" class="block text-sm font-medium text-gray-700">Change Image</label>
-                        <input type="file" name="file_name" id="file_name" accept="image/*"
-                               class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        @error('file_name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                     </div>
                 </div>
 
@@ -75,37 +80,15 @@
     </div>
 </div>
 
-@if(session('success'))
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            title: 'Success!',
-            text: "{{ session('success') }}",
-            icon: 'success',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
-        });
-    });
-</script>
-@endif
-
-<script>
-document.getElementById('edit-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    Swal.fire({
-        title: 'Confirm Update',
-        text: "Are you sure you want to update this product?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, update it!',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            this.submit();
-        }
-    });
-});
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('image-preview').src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 </script>
 @endsection

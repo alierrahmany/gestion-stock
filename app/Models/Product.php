@@ -64,21 +64,10 @@ class Product extends Model
 
     public function getImageUrlAttribute()
     {
-        if (!$this->file_name) {
-            return $this->defaultImageUrl();
+        if ($this->file_name === 'no_image.jpg') {
+            return asset('images/default-product.png');
         }
-
-        if (filter_var($this->file_name, FILTER_VALIDATE_URL)) {
-            return $this->file_name;
-        }
-
-        $cleanPath = ltrim($this->file_name, '/');
-
-        if (Storage::disk('public')->exists($cleanPath)) {
-            return asset("storage/{$cleanPath}");
-        }
-
-        return $this->defaultImageUrl();
+        return Storage::url('products/'.$this->file_name);
     }
 
     protected function defaultImageUrl()
