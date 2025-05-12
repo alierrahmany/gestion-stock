@@ -1,7 +1,13 @@
 @extends('layouts.app')
 
 @section('sidebar')
-    @include('admin.partials.admin-sidebar')
+    @if(auth()->user()->role === 'admin')
+        @include('admin.partials.admin-sidebar')
+    @elseif(auth()->user()->role === 'gestionnaire')
+        @include('gestionnaire.partials.sidebar_gestionnaire')
+    @elseif(auth()->user()->role === 'magasin')
+        @include('magasin.partials.sidebar')
+    @endif
 @endsection
 
 @section('content')
