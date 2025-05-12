@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') | Stock Management</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
 
@@ -54,9 +54,10 @@
             <!-- Header -->
             <header class="bg-white shadow-sm z-10">
                 <div class="flex justify-between items-center h-16 px-6">
-                    <h1 class="text-xl font-bold text-gray-800">
-                        @yield('header-title', 'Dashboard')
-                    </h1>
+                    <div class="flex items-center ml-10">  <!-- ml-4 pour déplacer vers la droite -->
+                        <!-- Logo avec taille légèrement augmentée (h-12 au lieu de h-10) -->
+                        <img src="{{ asset('images/logo.png') }}" alt="Company Logo" class="h-20">
+                    </div>
                     <div class="flex items-center space-x-4">
                         <!-- Notifications Dropdown - Only for Admin -->
                         @if(auth()->user()->role === 'admin')
@@ -89,15 +90,15 @@
                                     <button class="filter-btn px-3 py-1 text-xs rounded-full bg-green-100 text-green-800" data-filter="sale">Sales</button>
                                     <button class="filter-btn px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800" data-filter="purchase">Purchases</button>
                                 </div>
-                                
+
                                 <!-- Notifications List -->
                                 <div class="py-1" role="none">
                                     @php
                                         $notificationsQuery = \App\Models\Notification::with('actionUser')->latest();
                                     @endphp
-                                    
+
                                     @forelse($notificationsQuery->take(20)->get() as $notification)
-                                        <div class="px-4 py-3 hover:bg-gray-100 {{ $notification->read ? '' : 'bg-blue-50' }}" 
+                                        <div class="px-4 py-3 hover:bg-gray-100 {{ $notification->read ? '' : 'bg-blue-50' }}"
                                              data-notification-id="{{ $notification->id }}"
                                              data-notification-type="{{ $notification->type }}">
                                             <div class="flex items-start">
@@ -131,7 +132,7 @@
                                                             </div>
                                                         </div>
                                                         @if(!$notification->read)
-                                                            <button class="mark-as-read text-xs text-blue-600 hover:text-blue-800 ml-2" 
+                                                            <button class="mark-as-read text-xs text-blue-600 hover:text-blue-800 ml-2"
                                                                     data-id="{{ $notification->id }}">
                                                                 <i class="fas fa-check"></i>
                                                             </button>
@@ -244,7 +245,7 @@
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const notificationId = this.getAttribute('data-id');
-                    
+
                     fetch(`/notifications/${notificationId}/mark-as-read`, {
                         method: 'POST',
                         headers: {
@@ -259,7 +260,7 @@
                               notificationItem.classList.remove('bg-blue-50');
                               notificationItem.querySelector('.bg-blue-500').classList.replace('bg-blue-500', 'bg-gray-300');
                               this.remove();
-                              
+
                               // Update badge count
                               const badge = document.querySelector('.notification-badge');
                               if (badge) {
@@ -280,7 +281,7 @@
             if (markAllForm) {
                 markAllForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    
+
                     fetch(this.action, {
                         method: 'POST',
                         headers: {
@@ -303,7 +304,7 @@
                                       markButton.remove();
                                   }
                               });
-                              
+
                               // Remove badge
                               const badge = document.querySelector('.notification-badge');
                               if (badge) {
@@ -322,10 +323,10 @@
                         b.classList.remove('active', 'bg-blue-100', 'text-blue-800');
                         b.classList.add('bg-gray-100', 'text-gray-800');
                     });
-                    
+
                     this.classList.remove('bg-gray-100', 'text-gray-800');
                     this.classList.add('active', 'bg-blue-100', 'text-blue-800');
-                    
+
                     const filter = this.dataset.filter;
                     document.querySelectorAll('[data-notification-id]').forEach(notification => {
                         if (filter === 'all' || notification.dataset.notificationType === filter) {
