@@ -126,7 +126,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/documents', [DocumentsController::class, 'index'])->name('documents.index');
 });
 
-Route::middleware(['auth','role:admin,gestionnaire,magasin'])->group(function () {
-        Route::resource('products', ProductsController::class)->names([
-        'index'   => 'products.index']);
+Route::middleware(['auth', 'role:admin,gestionnaire,magasin'])->group(function () {
+    Route::resource('products', ProductsController::class)->names([
+        'index'   => 'products.index'
+    ]);
 });

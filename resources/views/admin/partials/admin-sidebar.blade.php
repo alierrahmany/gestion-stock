@@ -64,7 +64,7 @@
 
     <div class="p-4 border-t border-primary-700">
         <div class="flex items-center">
-            
+
         </div>
     </div>
 </div>

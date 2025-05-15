@@ -19,9 +19,9 @@
                     <i class="fas fa-bell mr-2 text-blue-500"></i>All Notifications
                 </h1>
                 <div class="flex space-x-2">
-                    <form action="{{ route('notifications.mark-all-as-read') }}" method="POST">
+                    <form id="markAllAsReadForm">
                         @csrf
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <button type="button" onclick="markAllAsRead()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                             Mark All as Read
                         </button>
                     </form>
@@ -170,11 +170,9 @@
         document.getElementById('deleteModal').classList.add('hidden');
     }
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (!currentNotificationId) return;
-
-        fetch(`/notifications/${currentNotificationId}`, {
-            method: 'DELETE',
+    function markAllAsRead() {
+        fetch("{{ route('notifications.mark-all-as-read') }}", {
+            method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Content-Type': 'application/json',
@@ -184,35 +182,89 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Remove notification from DOM
-                const notificationElement = document.getElementById(`notification-${currentNotificationId}`);
-                if (notificationElement) {
-                    notificationElement.remove();
-                }
+                // Update UI without reloading
+                document.querySelectorAll('.bg-blue-50').forEach(el => {
+                    el.classList.remove('bg-blue-50');
+                });
+                document.querySelectorAll('.text-gray-900').forEach(el => {
+                    el.classList.remove('text-gray-900');
+                    el.classList.add('text-gray-600');
+                });
+                document.querySelectorAll('.h-2.w-2.bg-blue-500').forEach(el => {
+                    el.remove();
+                });
 
-                // Show success message
                 Swal.fire({
-                    title: 'Deleted!',
-                    text: 'The notification has been deleted.',
+                    title: 'Success!',
+                    text: 'All notifications marked as read',
                     icon: 'success',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#3085d6'
+                    confirmButtonText: 'OK'
                 });
             }
-            hideDeleteModal();
         })
         .catch(error => {
             console.error('Error:', error);
             Swal.fire({
                 title: 'Error!',
-                text: 'An error occurred while deleting the notification.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#3085d6'
+                text: 'Failed to mark all as read',
+                icon: 'error'
             });
-            hideDeleteModal();
         });
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!currentNotificationId) return;
+
+    // Use Laravel's route helper to generate the correct URL
+    const url = `{{ route('notifications.destroy', ':id') }}`.replace(':id', currentNotificationId);
+
+    fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const notificationElement = document.getElementById(`notification-${currentNotificationId}`);
+            if (notificationElement) {
+                notificationElement.remove();
+            }
+
+            // Show success message
+            Swal.fire({
+                title: 'Success!',
+                text: data.message || 'Notification deleted successfully',
+                icon: 'success'
+            });
+
+            // Check if list is now empty
+            if (document.querySelectorAll('ul.divide-y > li').length === 1) {
+                window.location.reload();
+            }
+        } else {
+            throw new Error(data.message || 'Failed to delete notification');
+        }
+        hideDeleteModal();
+    })
+    .catch(error => {
+        console.error('Delete Error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: error.message || 'An error occurred while deleting the notification.',
+            icon: 'error'
+        });
+        hideDeleteModal();
     });
+});
 
     // Close modal when clicking outside
     window.addEventListener('click', function(event) {
