@@ -29,16 +29,16 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-search text-gray-400 text-lg"></i>
                     </div>
-                    <input type="text" 
+                    <input type="text"
                            id="searchInput"
-                           name="search" 
-                           value="{{ request('search') }}" 
+                           name="search"
+                           value="{{ request('search') }}"
                            class="block w-full pl-12 pr-4 py-3 text-lg border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 ease-in-out"
                            placeholder="Rechercher un fournisseur par nom, email ou téléphone..."
                            autocomplete="off">
                 </div>
                 @if(request('search'))
-                    <button onclick="clearSearch()" 
+                    <button onclick="clearSearch()"
                             class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 ease-in-out text-base">
                         <i class="fas fa-times mr-2"></i>
                         Réinitialiser
@@ -72,7 +72,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+
                         </tr>
                     </thead>
                     <tbody id="suppliersTableBody" class="bg-white divide-y divide-gray-200">
@@ -82,18 +84,15 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $supplier->name }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $supplier->email }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $supplier->contact }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $supplier->address }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end space-x-3">
                                     <a href="{{ route('suppliers.edit', $supplier->id) }}" class="text-blue-600 hover:text-blue-900">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="setDeleteAction('{{ route('suppliers.destroy', $supplier->id) }}')" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -108,20 +107,49 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Confirmer la suppression</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Êtes-vous sûr de vouloir supprimer ce fournisseur? Cette action est irréversible.</p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <form id="deleteForm" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Supprimer
+                    </button>
+                    <button type="button" onclick="closeModal()" class="ml-3 px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Annuler
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Delete form handling
-    const deleteForms = document.querySelectorAll('.delete-form');
-    if (deleteForms) {
-        deleteForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur?')) {
-                    form.submit();
-                }
-            });
-        });
-    }
+    // Modal handling
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteForm = document.getElementById('deleteForm');
+
+    // Close modal function
+    window.closeModal = function() {
+        deleteModal.classList.add('hidden');
+    };
+
+    // Set delete action
+    window.setDeleteAction = function(url) {
+        deleteForm.action = url;
+        deleteModal.classList.remove('hidden');
+    };
 
     // Live Search Implementation
     const searchInput = document.getElementById('searchInput');
@@ -135,9 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = row.getElementsByTagName('td')[1].textContent.toLowerCase();
             const email = row.getElementsByTagName('td')[2].textContent.toLowerCase();
             const phone = row.getElementsByTagName('td')[3].textContent.toLowerCase();
-            
-            const matches = name.includes(searchTerm) || 
-                          email.includes(searchTerm) || 
+
+            const matches = name.includes(searchTerm) ||
+                          email.includes(searchTerm) ||
                           phone.includes(searchTerm);
             row.style.display = matches ? '' : 'none';
         });
@@ -148,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateNoResultsMessage(searchTerm) {
         const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
         const noResultsMessage = document.getElementById('noResultsMessage');
-        
+
         if (visibleRows.length === 0) {
             if (!noResultsMessage) {
                 const message = document.createElement('tr');
@@ -172,4 +200,10 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
+
+<style>
+    #deleteModal {
+        transition: opacity 0.3s ease;
+    }
+</style>
 @endsection

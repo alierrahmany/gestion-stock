@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>All Purchase Orders - {{ now()->format('Y-m-d') }}</title>
+    <title>Tous les bons d'achat - {{ now()->format('Y-m-d') }}</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -17,16 +17,15 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
-        .logo-placeholder {
-            width: 120px;
-            height: 120px;
-            border: 2px dashed #bbb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .logo-container {
+            width: 130px;
+            height: 130px;
             margin-right: 25px;
-            font-size: 14px;
-            color: #999;
+        }
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
         .header-text {
             flex: 1;
@@ -42,6 +41,12 @@
             font-weight: normal;
             font-size: 14px;
             color: #666;
+        }
+        .header-text h4 {
+            margin: 5px 0 0;
+            font-weight: normal;
+            font-size: 12px;
+            color: #888;
         }
         table {
             width: 100%;
@@ -93,10 +98,20 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo-placeholder">LOGO</div>
+        <div class="logo-container">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/logo.png'))) }}" alt="Logo">
+        </div>
         <div class="header-text">
-            <h1>All Purchase Orders</h1>
-            <h3>Generated on: {{ now()->format('d/m/Y H:i') }}</h3>
+            <h1>Tous les bons d'achat</h1>
+            <h3>
+                @if(request()->has('date_from') || request()->has('date_to'))
+                    Période du {{ request('date_from') ? \Carbon\Carbon::parse(request('date_from'))->format('d/m/Y') : 'début' }}
+                    au {{ request('date_to') ? \Carbon\Carbon::parse(request('date_to'))->format('d/m/Y') : 'aujourd\'hui' }}
+                @else
+                    Tous les achats
+                @endif
+            </h3>
+            <h4>Généré le : {{ now()->format('d/m/Y H:i') }}</h4>
         </div>
     </div>
 
@@ -106,21 +121,21 @@
         <div class="document">
             <table>
                 <tr>
-                    <td width="50%"><strong>Purchase Order #:</strong> PO-{{ str_pad($purchase->id, 5, '0', STR_PAD_LEFT) }}</td>
-                    <td width="50%"><strong>Date:</strong> {{ $purchase->date->format('d/m/Y') }}</td>
+                    <td width="50%"><strong>N° Bon :</strong> BC-{{ str_pad($purchase->id, 5, '0', STR_PAD_LEFT) }}</td>
+                    <td width="50%"><strong>Date :</strong> {{ $purchase->date->format('d/m/Y') }}</td>
                 </tr>
                 <tr>
-                    <td><strong>Supplier:</strong> {{ $purchase->supplier->name }}</td>
-                    <td><strong>Delivery Address:</strong> Our Company Address</td>
+                    <td><strong>Fournisseur :</strong> {{ $purchase->supplier->name }}</td>
+                    <td><strong>Adresse de livraison :</strong>StockIno - 45 Av. Mohammed V, Rabat</td>
                 </tr>
             </table>
 
             <table>
                 <thead>
                     <tr>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Unit Price</th>
+                        <th>Produit</th>
+                        <th>Quantité</th>
+                        <th>Prix unitaire</th>
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -132,15 +147,15 @@
                         <td>{{ number_format($purchase->quantity * $purchase->price, 2) }} DH</td>
                     </tr>
                     <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td colspan="3" style="text-align: right;"><strong>Sous-total :</strong></td>
                         <td>{{ number_format($purchase->quantity * $purchase->price, 2) }} DH</td>
                     </tr>
                     <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Tax ({{ $purchase->tax_rate ?? 0 }}%):</strong></td>
+                        <td colspan="3" style="text-align: right;"><strong>TVA ({{ $purchase->tax_rate ?? 0 }}%) :</strong></td>
                         <td>{{ number_format($purchase->quantity * $purchase->price * (($purchase->tax_rate ?? 0)/100), 2) }} DH</td>
                     </tr>
                     <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Total Amount:</strong></td>
+                        <td colspan="3" style="text-align: right;"><strong>Montant total :</strong></td>
                         <td>{{ number_format($purchase->quantity * $purchase->price * (1 + ($purchase->tax_rate ?? 0)/100), 2) }} DH</td>
                     </tr>
                 </tbody>
@@ -154,16 +169,21 @@
             @if($loop->last)
                 <!-- Show signature block only on the last page -->
                 <div class="signature-block">
-                    <div class="signature-info"><strong>Company Authorization:</strong></div>
+                    <div class="signature-info"><strong>Autorisation de l'entreprise :</strong></div>
                     <div class="signature-line"></div>
-                    <div class="signature-info">Name: _________________________</div>
-                    <div class="signature-info">Role: Admin/Gestionnaire</div>
-                    <div class="signature-info">Date: {{ now()->format('d/m/Y') }}</div>
+                    <div class="signature-info">Nom : _________________________</div>
+                    <div class="signature-info">Rôle : Admin/Gestionnaire</div>
+                    <div class="signature-info">Date : {{ now()->format('d/m/Y') }}</div>
                 </div>
             @endif
 
-            <div class="footer">
-                <p>Company Name | Address | Phone | Email</p>
+            <div class="footer" style="font-size: 11px; color: #292929;">
+                <p>
+                    <i class="fas fa-building"></i> StockIno Magazine | 
+                    <i class="fas fa-map-marker-alt"></i> 45 Av. Mohammed V, Rabat | 
+                    <i class="fas fa-phone"></i> +212 5 37 22 33 44 | 
+                    <i class="fas fa-envelope"></i> info@stockino.ma
+                </p>
             </div>
 
             @if(!$loop->last)

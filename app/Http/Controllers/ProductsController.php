@@ -18,21 +18,22 @@ class ProductsController extends Controller
         $query = Product::with('category');
         $categories = Category::all();
 
-        if ($request->has('category') && $request->category !== '') {
-            $query->where('categorie_id', $request->category);
-        }
-
-        if ($request->has('search')) {
+        if ($request->has('search') && !empty($request->search)) {
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
+                $q->where('name', 'LIKE', "%$search%")
                     ->orWhereHas('category', function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%");
+                        $q->where('name', 'LIKE', "%$search%");
                     });
             });
         }
 
-        $products = $query->latest()->paginate(10);
+        if ($request->has('category') && !empty($request->category)) {
+            $query->where('categorie_id', $request->category);
+        }
+
+        $products = $query->latest()->paginate(10)->appends(request()->query());
+
         return view('products.index', compact('products', 'categories'));
     }
 
@@ -42,7 +43,7 @@ class ProductsController extends Controller
         return view('products.create', compact('categories'));
     }
 
-     public function store(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -58,7 +59,7 @@ class ProductsController extends Controller
 
             $imageName = 'no_image.jpg';
             if ($request->hasFile('image')) {
-                $imageName = time().'_'.Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$request->image->extension();
+                $imageName = time() . '_' . Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $request->image->extension();
                 $request->image->storeAs('products', $imageName, 'public');
             }
 
@@ -70,12 +71,29 @@ class ProductsController extends Controller
             ]);
 
             // Create notification
+            // Get category name for notification
+            $category = Category::find($request->categorie_id);
+
+            // Create detailed notification in French
             Notification::create([
                 'user_id' => Auth::id(),
                 'action_user_id' => Auth::id(),
-                'message' => 'Product ' . $product->name . ' was added',
+                'message' => sprintf(
+                    "Nouveau produit créé : %s (Catégorie : %s)",
+                    $product->name,
+                    $category->name
+                ),
                 'read' => false,
-                'type' => 'product'
+                'type' => 'product',
+                'data' => json_encode([
+                    'product_id' => $product->id,
+                    'action' => 'created',
+                    'details' => [
+                        'name' => $product->name,
+                        'category' => $category->name,
+                        'image' => $imageName !== 'no_image.jpg' ? 'Uploaded' : 'Default'
+                    ]
+                ])
             ]);
 
             return redirect()->route('products.index')->with('success', 'Product created successfully');
@@ -101,6 +119,13 @@ class ProductsController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
+        // Store original values before any changes
+        $originalValues = [
+            'name' => $product->name,
+            'category' => $product->category->name,
+            'image' => $product->file_name
+        ];
+
         $data = [
             'name' => $request->name,
             'categorie_id' => $request->categorie_id
@@ -113,21 +138,70 @@ class ProductsController extends Controller
             }
 
             // Store new image
-            $imageName = time().'_'.Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$request->image->extension();
+            $imageName = time() . '_' . Str::slug(pathinfo($request->image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $request->image->extension();
             $request->image->storeAs('products', $imageName, 'public');
             $data['file_name'] = $imageName;
         }
 
         $product->update($data);
 
-        // Create notification
-        Notification::create([
-            'user_id' => Auth::id(),
-            'action_user_id' => Auth::id(),
-            'message' => 'Product ' . $product->name . ' was updated',
-            'read' => false,
-            'type' => 'product'
-        ]);
+        // Get new category name
+        $newCategory = Category::find($request->categorie_id);
+
+        // Prepare detailed change description in French
+        $changeDetails = [];
+
+        if ($originalValues['name'] !== $request->name) {
+            $changeDetails[] = sprintf(
+                "Nom changé de '%s' à '%s'",
+                $originalValues['name'],
+                $request->name
+            );
+        }
+
+        if ($originalValues['category'] !== $newCategory->name) {
+            $changeDetails[] = sprintf(
+                "Catégorie changée de '%s' à '%s'",
+                $originalValues['category'],
+                $newCategory->name
+            );
+        }
+
+        if (isset($data['file_name']) && $originalValues['image'] !== $data['file_name']) {
+            $changeDetails[] = "L'image du produit a été mise à jour";
+        }
+
+        // Only create notification if there were actual changes
+        if (!empty($changeDetails)) {
+            $notificationMessage = "Produit '{$product->name}' mis à jour :\n" . implode("\n", $changeDetails);
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'action_user_id' => Auth::id(),
+                'message' => $notificationMessage,
+                'read' => false,
+                'type' => 'product',
+                'data' => json_encode([
+                    'product_id' => $product->id,
+                    'action' => 'updated',
+                    'changes' => [
+                        'name' => [
+                            'from' => $originalValues['name'],
+                            'to' => $request->name
+                        ],
+                        'category' => [
+                            'from' => $originalValues['category'],
+                            'to' => $newCategory->name
+                        ],
+                        'image' => [
+                            'from' => $originalValues['image'],
+                            'to' => $data['file_name'] ?? $originalValues['image']
+                        ]
+                    ],
+                    'updated_at' => now()->toDateTimeString()
+                ])
+            ]);
+        }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
@@ -139,15 +213,28 @@ class ProductsController extends Controller
         }
 
         $productName = $product->name;
+        $categoryName = $product->category->name;
         $product->delete();
 
-        // Create notification
+        // Create detailed deletion notification in French
         Notification::create([
             'user_id' => Auth::id(),
             'action_user_id' => Auth::id(),
-            'message' => 'Product ' . $productName . ' was deleted',
+            'message' => sprintf(
+                "Produit supprimé : %s (Catégorie : %s)",
+                $productName,
+                $categoryName
+            ),
             'read' => false,
-            'type' => 'product'
+            'type' => 'product',
+            'data' => json_encode([
+                'action' => 'deleted',
+                'deleted_product' => [
+                    'name' => $productName,
+                    'category' => $categoryName,
+                    'deleted_at' => now()->toDateTimeString()
+                ]
+            ])
         ]);
 
         return redirect()->route('products.index')->with('success', 'Product deleted successfully');

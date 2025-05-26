@@ -35,7 +35,7 @@ class ReportsController extends Controller
             'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'product_id' => 'nullable|exists:products,id',
-            'report_type' => ['required', 'in:'.implode(',', $validTypes)],
+            'report_type' => ['required', 'in:' . implode(',', $validTypes)],
         ]);
 
         $products = Product::all();
@@ -60,14 +60,206 @@ class ReportsController extends Controller
 
         $chartData = $this->prepareChartData($request->report_type, $startDate, $endDate, $request->product_id);
         $topProducts = $this->getTopProductsData($request->report_type, $startDate, $endDate, 5);
+        $topProductsSummary = $this->prepareTopProducts($request->report_type, $startDate, $endDate, $request->product_id);
 
         return view('reports.index', [
             'products' => $products,
             'transactions' => $transactions,
             'chartData' => $chartData,
             'topProducts' => $topProducts,
+            'topProductsSummary' => $topProductsSummary,
             'filters' => $request->all()
         ]);
+    }
+
+    private function prepareChartData($type, $startDate, $endDate, $productId = null)
+    {
+        if ($type === 'sales') {
+            $query = Sale::query();
+        } else {
+            $query = Purchase::query();
+        }
+
+        $query->whereBetween('date', [$startDate, $endDate]);
+
+        if ($productId) {
+            $query->where('product_id', $productId);
+        }
+
+        $dateDiff = $startDate->diffInDays($endDate);
+
+        if ($dateDiff <= 31) {
+            // Daily grouping
+            $results = $query->selectRaw('
+                DATE(date) as date_group,
+                COALESCE(SUM(quantity * price), 0) as total_amount,
+                COALESCE(SUM(quantity), 0) as total_quantity
+            ')
+                ->groupBy('date_group')
+                ->orderBy('date_group')
+                ->get();
+
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $dateStr = $currentDate->format('Y-m-d');
+                $labels[] = $currentDate->format('M d');
+
+                $found = $results->firstWhere('date_group', $dateStr);
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
+
+                $currentDate->addDay();
+            }
+        } elseif ($dateDiff <= 365) {
+            // Weekly grouping
+            $results = $query->selectRaw('
+                YEAR(date) as year,
+                WEEK(date) as week,
+                COALESCE(SUM(quantity * price), 0) as total_amount,
+                COALESCE(SUM(quantity), 0) as total_quantity
+            ')
+                ->groupBy('year', 'week')
+                ->orderBy('year')
+                ->orderBy('week')
+                ->get();
+
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $year = $currentDate->format('Y');
+                $week = $currentDate->weekOfYear;
+                $labels[] = 'W' . $week . ' ' . $year;
+
+                $found = $results->first(function ($item) use ($year, $week) {
+                    return $item->year == $year && $item->week == $week;
+                });
+
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
+
+                $currentDate->addWeek();
+            }
+        } else {
+            // Monthly grouping
+            $results = $query->selectRaw('
+                YEAR(date) as year,
+                MONTH(date) as month,
+                COALESCE(SUM(quantity * price), 0) as total_amount,
+                COALESCE(SUM(quantity), 0) as total_quantity
+            ')
+                ->groupBy('year', 'month')
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get();
+
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                $year = $currentDate->format('Y');
+                $month = $currentDate->month;
+                $labels[] = $currentDate->format('M Y');
+
+                $found = $results->first(function ($item) use ($year, $month) {
+                    return $item->year == $year && $item->month == $month;
+                });
+
+                $data[] = $found ? (float)$found->total_amount : 0;
+                $quantities[] = $found ? (int)$found->total_quantity : 0;
+
+                $currentDate->addMonth();
+            }
+        }
+
+        return [
+            'labels' => $labels ?? [],
+            'data' => $data ?? [],
+            'quantities' => $quantities ?? [],
+            'currency' => 'DH'
+        ];
+    }
+
+    private function prepareTopProducts($type, $startDate, $endDate, $productId = null)
+    {
+        if ($type === 'sales') {
+            $query = Sale::query();
+        } else {
+            $query = Purchase::query();
+        }
+
+        $query->whereBetween('date', [$startDate, $endDate]);
+
+        if ($productId) {
+            $query->where('product_id', $productId);
+        }
+
+        $transactions = $query->with('product')->get();
+
+        // Group by product and calculate totals
+        $products = [];
+        foreach ($transactions as $transaction) {
+            $productId = $transaction->product_id;
+            if (!isset($products[$productId])) {
+                $products[$productId] = [
+                    'name' => $transaction->product->name ?? 'Unknown Product',
+                    'quantity' => 0,
+                    'amount' => 0
+                ];
+            }
+            $products[$productId]['quantity'] += $transaction->quantity;
+            $products[$productId]['amount'] += ($transaction->quantity * $transaction->price);
+        }
+
+        // Convert to array and sort
+        $products = array_values($products);
+
+        // Find top by quantity
+        usort($products, function ($a, $b) {
+            return $b['quantity'] <=> $a['quantity'];
+        });
+        $topByQuantity = count($products) > 0 ? $products[0] : null;
+
+        // Find top by amount
+        usort($products, function ($a, $b) {
+            return $b['amount'] <=> $a['amount'];
+        });
+        $topByAmount = count($products) > 0 ? $products[0] : null;
+
+        return [
+            'topByQuantity' => $topByQuantity,
+            'topByAmount' => $topByAmount
+        ];
+    }
+
+    private function getTopProductsData($type, $startDate, $endDate, $limit = 5)
+    {
+        if ($type === 'sales') {
+            $query = Sale::with('product')
+                ->whereBetween('date', [$startDate, $endDate]);
+        } else {
+            $query = Purchase::with('product')
+                ->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        $results = $query->selectRaw('
+            product_id,
+            SUM(quantity) as total_quantity,
+            SUM(quantity * price) as total_amount
+        ')
+            ->groupBy('product_id')
+            ->orderByDesc('total_quantity')
+            ->limit($limit)
+            ->get();
+
+        // Filter out products with zero quantity or amount
+        $filteredResults = $results->filter(function ($item) {
+            return $item->total_quantity > 0 && $item->total_amount > 0;
+        });
+
+        return $filteredResults->map(function ($item) {
+            return [
+                'name' => $item->product->name ?? 'Unknown Product',
+                'quantity' => (int)$item->total_quantity,
+                'amount' => (float)$item->total_amount
+            ];
+        });
     }
 
     public function export(Request $request, $format)
@@ -98,6 +290,8 @@ class ReportsController extends Controller
 
         $transactions = $query->orderBy('date')->get();
         $topProducts = $this->getTopProductsData($request->report_type, $startDate, $endDate, 5);
+        $highlights = $this->prepareHighlights($request->report_type, $startDate, $endDate, $request->product_id);
+        $chartData = $this->prepareChartData($request->report_type, $startDate, $endDate, $request->product_id);
 
         $reportData = [
             'report_type' => $request->report_type,
@@ -112,148 +306,74 @@ class ReportsController extends Controller
 
         if ($format === 'csv') {
             return $this->exportToCsv($reportData);
-        } elseif ($format === 'pdf') {
-            return $this->exportToPdf($reportData);
         }
 
-        return redirect()->back()->with('error', 'Invalid export format');
+        // Default to PDF
+        $pdf = PDF::loadView('reports.pdf', [
+            'reportData' => $reportData,
+            'highlights' => $highlights,
+            'title' => ucfirst($request->report_type) . ' Report',
+            'dateRange' => $request->start_date . ' to ' . $request->end_date
+        ]);
+
+        return $pdf->download($request->report_type . '_report_' . now()->format('Ymd_His') . '.pdf');
     }
 
-    private function prepareChartData($type, $startDate, $endDate, $productId = null)
+    private function prepareHighlights($type, $startDate, $endDate, $productId = null)
     {
         if ($type === 'sales') {
             $query = Sale::query();
+            $title = "Points Forts des Ventes";
+            $quantityTitle = "Produit le Plus Vendu (Quantité)";
+            $amountTitle = "Produit le Plus Vendu (Valeur)";
         } else {
             $query = Purchase::query();
+            $title = "Points Forts des Achats";
+            $quantityTitle = "Produit le Plus Acheté (Quantité)";
+            $amountTitle = "Produit le Plus Acheté (Valeur)";
         }
 
-        $query->whereNotNull('date')
-            ->whereBetween('date', [$startDate, $endDate]);
+        $query->whereBetween('date', [$startDate, $endDate]);
 
         if ($productId) {
             $query->where('product_id', $productId);
         }
 
-        $dateDiff = $startDate->diffInDays($endDate);
+        $transactions = $query->with('product')->get();
 
-        if ($dateDiff <= 31) {
-            // Daily grouping
-            $results = $query->selectRaw('
-                DATE(date) as date_group,
-                SUM(quantity * price) as total_amount,
-                SUM(quantity) as total_quantity
-            ')
-            ->groupBy('date_group')
-            ->orderBy('date_group')
-            ->get();
-
-            $currentDate = clone $startDate;
-            while ($currentDate <= $endDate) {
-                $dateStr = $currentDate->format('Y-m-d');
-                $labels[] = $currentDate->format('M d');
-
-                $found = $results->firstWhere('date_group', $dateStr);
-                $data[] = $found ? (float)$found->total_amount : 0;
-                $quantities[] = $found ? (int)$found->total_quantity : 0;
-
-                $currentDate->addDay();
+        $products = [];
+        foreach ($transactions as $transaction) {
+            $productId = $transaction->product_id;
+            if (!isset($products[$productId])) {
+                $products[$productId] = [
+                    'name' => $transaction->product->name ?? 'Unknown Product',
+                    'quantity' => 0,
+                    'amount' => 0
+                ];
             }
-        } elseif ($dateDiff <= 365) {
-            // Weekly grouping
-            $results = $query->selectRaw('
-                YEAR(date) as year,
-                WEEK(date) as week,
-                SUM(quantity * price) as total_amount,
-                SUM(quantity) as total_quantity
-            ')
-            ->groupBy('year', 'week')
-            ->orderBy('year')
-            ->orderBy('week')
-            ->get();
-
-            $currentDate = clone $startDate;
-            while ($currentDate <= $endDate) {
-                $year = $currentDate->format('Y');
-                $week = $currentDate->weekOfYear;
-                $labels[] = 'W' . $week . ' ' . $year;
-
-                $found = $results->first(function ($item) use ($year, $week) {
-                    return $item->year == $year && $item->week == $week;
-                });
-
-                $data[] = $found ? (float)$found->total_amount : 0;
-                $quantities[] = $found ? (int)$found->total_quantity : 0;
-
-                $currentDate->addWeek();
-            }
-        } else {
-            // Monthly grouping
-            $results = $query->selectRaw('
-                YEAR(date) as year,
-                MONTH(date) as month,
-                SUM(quantity * price) as total_amount,
-                SUM(quantity) as total_quantity
-            ')
-            ->groupBy('year', 'month')
-            ->orderBy('year')
-            ->orderBy('month')
-            ->get();
-
-            $currentDate = clone $startDate;
-            while ($currentDate <= $endDate) {
-                $year = $currentDate->format('Y');
-                $month = $currentDate->month;
-                $labels[] = $currentDate->format('M Y');
-
-                $found = $results->first(function ($item) use ($year, $month) {
-                    return $item->year == $year && $item->month == $month;
-                });
-
-                $data[] = $found ? (float)$found->total_amount : 0;
-                $quantities[] = $found ? (int)$found->total_quantity : 0;
-
-                $currentDate->addMonth();
-            }
+            $products[$productId]['quantity'] += $transaction->quantity;
+            $products[$productId]['amount'] += ($transaction->quantity * $transaction->price);
         }
+
+        $products = array_values($products);
+
+        usort($products, function ($a, $b) {
+            return $b['quantity'] <=> $a['quantity'];
+        });
+        $topByQuantity = count($products) > 0 ? $products[0] : null;
+
+        usort($products, function ($a, $b) {
+            return $b['amount'] <=> $a['amount'];
+        });
+        $topByAmount = count($products) > 0 ? $products[0] : null;
 
         return [
-            'labels' => $labels ?? [],
-            'data' => $data ?? [],
-            'quantities' => $quantities ?? [],
-            'currency' => 'DH'
+            'title' => $title,
+            'quantityTitle' => $quantityTitle,
+            'amountTitle' => $amountTitle,
+            'topByQuantity' => $topByQuantity,
+            'topByAmount' => $topByAmount
         ];
-    }
-
-    private function getTopProductsData($type, $startDate, $endDate, $limit = 5)
-    {
-        if ($type === 'sales') {
-            $query = Sale::with('product')
-                ->whereNotNull('date')
-                ->whereBetween('date', [$startDate, $endDate]);
-        } else {
-            $query = Purchase::with('product')
-                ->whereNotNull('date')
-                ->whereBetween('date', [$startDate, $endDate]);
-        }
-
-        return $query->selectRaw('
-                product_id,
-                SUM(quantity) as total_quantity,
-                SUM(quantity * price) as total_amount
-            ')
-            ->groupBy('product_id')
-            ->having('total_quantity', '>', 0)
-            ->having('total_amount', '>', 0)
-            ->orderByDesc('total_quantity')
-            ->limit($limit)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'name' => $item->product->name ?? 'Unknown Product',
-                    'quantity' => $item->total_quantity,
-                    'amount' => $item->total_amount
-                ];
-            });
     }
 
     private function exportToCsv($reportData)
@@ -261,21 +381,32 @@ class ReportsController extends Controller
         $fileName = $reportData['report_type'] . '_report_' . now()->format('Ymd_His') . '.csv';
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ];
 
         $callback = function () use ($reportData) {
-            $file = fopen('php://output', 'w');
+            $output = fopen('php://output', 'w');
 
-            // Report Header
-            fputcsv($file, ['*** ' . strtoupper($reportData['report_type']) . ' REPORT ***']);
-            fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')]);
-            fputcsv($file, ['Date Range: ' . $reportData['filters']['start_date'] . ' to ' . $reportData['filters']['end_date']]);
-            fputcsv($file, []);
+            // Add UTF-8 BOM for perfect Excel compatibility
+            fwrite($output, "\xEF\xBB\xBF");
 
-            // Summary Section
-            fputcsv($file, ['=== SUMMARY ===']);
+            // 1. Company Header
+            $this->writeCsvRow($output, ['StockIno - Gestion de Stock']);
+            $this->writeCsvRow($output, ['45 Av. Mohammed V, Rabat | Tél: +212 5 37 22 33 44']);
+            $this->writeCsvRow($output, []); // Empty row
+
+            // 2. Report Title
+            $reportTitle = $reportData['report_type'] == 'sales'
+                ? 'Rapport des Ventes'
+                : 'Rapport des Achats';
+            $this->writeCsvRow($output, [$reportTitle]);
+            $this->writeCsvRow($output, ['Période:', $reportData['filters']['start_date'] . ' au ' . $reportData['filters']['end_date']]);
+            $this->writeCsvRow($output, ['Généré le:', now()->format('d/m/Y H:i')]);
+            $this->writeCsvRow($output, []);
+
+            // 3. Summary Section
+            $this->writeCsvRow($output, ['RÉSUMÉ']);
 
             $totalAmount = $reportData['transactions']->sum(function ($t) {
                 return $t->quantity * $t->price;
@@ -283,73 +414,91 @@ class ReportsController extends Controller
             $totalQuantity = $reportData['transactions']->sum('quantity');
 
             if ($reportData['report_type'] == 'sales') {
-                fputcsv($file, ['Total Sales:', $reportData['transactions']->count()]);
-                fputcsv($file, ['Total Revenue:', number_format($totalAmount, 2) . ' DH']);
-                fputcsv($file, ['Items Sold:', $totalQuantity]);
+                $this->writeCsvRow($output, ['Ventes totales', $reportData['transactions']->count()]);
+                $this->writeCsvRow($output, ['Revenu total', $this->formatMoney($totalAmount)]);
+                $this->writeCsvRow($output, ['Articles vendus', $totalQuantity]);
             } else {
-                fputcsv($file, ['Total Purchases:', $reportData['transactions']->count()]);
-                fputcsv($file, ['Total Cost:', number_format($totalAmount, 2) . ' DH']);
-                fputcsv($file, ['Items Purchased:', $totalQuantity]);
+                $this->writeCsvRow($output, ['Achats totaux', $reportData['transactions']->count()]);
+                $this->writeCsvRow($output, ['Coût total', $this->formatMoney($totalAmount)]);
+                $this->writeCsvRow($output, ['Articles achetés', $totalQuantity]);
+            }
+            $this->writeCsvRow($output, []);
+
+            // 4. Highlights Section
+            if (isset($reportData['topProducts']) && $reportData['topProducts']->isNotEmpty()) {
+                $this->writeCsvRow($output, ['POINTS FORTS']);
+
+                $highlightTitle = $reportData['report_type'] == 'sales'
+                    ? 'Produits les plus vendus'
+                    : 'Produits les plus achetés';
+                $this->writeCsvRow($output, [$highlightTitle]);
+
+                $this->writeCsvRow($output, ['Produit', 'Quantité', 'Montant total']);
+
+                foreach ($reportData['topProducts'] as $product) {
+                    $this->writeCsvRow($output, [
+                        $product['name'],
+                        $product['quantity'],
+                        $this->formatMoney($product['amount'])
+                    ]);
+                }
+                $this->writeCsvRow($output, []);
             }
 
-            fputcsv($file, []);
-
-            // Transactions Header
-            fputcsv($file, ['=== TRANSACTION DETAILS ===']);
-            fputcsv($file, [
-                'DATE',
-                'REFERENCE',
-                'PRODUCT',
-                strtoupper($reportData['report_type'] == 'sales' ? 'CLIENT' : 'SUPPLIER'),
-                'QTY',
-                'UNIT PRICE',
-                'TOTAL'
+            // 5. Transactions Section
+            $this->writeCsvRow($output, ['DÉTAILS DES TRANSACTIONS']);
+            $this->writeCsvRow($output, [
+                'Date',
+                'Référence',
+                'Produit',
+                $reportData['report_type'] == 'sales' ? 'Client' : 'Fournisseur',
+                'Quantité',
+                'Prix unitaire',
+                'Total'
             ]);
 
-            // Transaction Data
             foreach ($reportData['transactions'] as $transaction) {
-                fputcsv($file, [
+                $this->writeCsvRow($output, [
                     $transaction->date ? $transaction->date->format('d/m/Y') : 'N/A',
-                    $transaction->reference ?? 'N/A',
+                    'RP-' . str_pad($transaction->id, 5, '0', STR_PAD_LEFT),
                     $transaction->product->name ?? 'N/A',
-                    $reportData['report_type'] == 'sales' ? ($transaction->client->name ?? 'N/A') : ($transaction->supplier->name ?? 'N/A'),
+                    $reportData['report_type'] == 'sales'
+                        ? ($transaction->client->name ?? 'N/A')
+                        : ($transaction->supplier->name ?? 'N/A'),
                     $transaction->quantity,
-                    number_format($transaction->price, 2) . ' DH',
-                    number_format($transaction->quantity * $transaction->price, 2) . ' DH'
+                    $this->formatMoney($transaction->price),
+                    $this->formatMoney($transaction->quantity * $transaction->price)
                 ]);
             }
 
-            // Top Products Section
-            if ($reportData['topProducts']->isNotEmpty()) {
-                fputcsv($file, []);
-                fputcsv($file, ['=== TOP ' . strtoupper($reportData['report_type'] == 'sales' ? 'SOLD' : 'PURCHASED') . ' PRODUCTS ===']);
-                fputcsv($file, ['PRODUCT', 'QUANTITY', 'TOTAL AMOUNT']);
+            // 6. Footer
+            $this->writeCsvRow($output, []);
+            $this->writeCsvRow($output, ['Généré par:', Auth::user()->name]);
+            $this->writeCsvRow($output, ['StockIno - Système de gestion']);
 
-                foreach ($reportData['topProducts'] as $product) {
-                    fputcsv($file, [
-                        $product['name'],
-                        $product['quantity'],
-                        number_format($product['amount'], 2) . ' DH'
-                    ]);
-                }
-            }
-
-            // Footer
-            fputcsv($file, []);
-            fputcsv($file, ['*** END OF REPORT ***']);
-
-            fclose($file);
+            fclose($output);
         };
 
         return Response::stream($callback, 200, $headers);
     }
 
+    // Helper method for consistent CSV writing
+    private function writeCsvRow($handle, $fields)
+    {
+        fputcsv($handle, $fields, ',', '"', '\\');
+    }
+
+    // Helper method for money formatting
+    private function formatMoney($amount)
+    {
+        return number_format($amount, 2, ',', ' ') . ' DH';
+    }
     private function exportToPdf($reportData)
     {
         $pdf = PDF::loadView('reports.pdf', [
             'reportData' => $reportData,
             'title' => ucfirst($reportData['report_type']) . ' Report',
-            'dateRange' => $reportData['filters']['start_date'] . ' to ' . $reportData['filters']['end_date']
+            'dateRange' => $reportData['filters']['start_date'] . ' to ' . $reportData['filters']['end_date'],
         ]);
 
         $fileName = $reportData['report_type'] . '_report_' . now()->format('Ymd_His') . '.pdf';

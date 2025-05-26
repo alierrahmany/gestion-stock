@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') | Stock Management</title>
 
     <!-- Favicon -->
@@ -85,10 +86,10 @@
                                 tabindex="-1">
                                 <!-- Filter Buttons -->
                                 <div class="sticky top-0 bg-white px-4 py-2 border-b flex space-x-2 overflow-x-auto">
-                                    <button class="filter-btn active px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="all">All</button>
-                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="product">Products</button>
-                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-green-100 text-green-800" data-filter="sale">Sales</button>
-                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800" data-filter="purchase">Purchases</button>
+                                    <button class="filter-btn active px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="all">Toutes</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800" data-filter="product">Produits</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-green-100 text-green-800" data-filter="sale">Ventes</button>
+                                    <button class="filter-btn px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800" data-filter="purchase">Achats</button>
                                 </div>
 
                                 <!-- Notifications List -->
@@ -112,11 +113,11 @@
                                                         <div>
                                                             <p class="text-sm {{ $notification->read ? 'text-gray-600' : 'text-gray-900 font-medium' }}">
                                                                 @if($notification->type === 'product')
-                                                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">Product</span>
+                                                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">Produits</span>
                                                                 @elseif($notification->type === 'sale')
-                                                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1">Sale</span>
+                                                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1">Ventes</span>
                                                                 @elseif($notification->type === 'purchase')
-                                                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mr-1">Purchase</span>
+                                                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mr-1">Achats</span>
                                                                 @else
                                                                     <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded mr-1">System</span>
                                                                 @endif
@@ -148,13 +149,13 @@
                                     @endforelse
                                 </div>
                                 <div class="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-2 text-center">
-                                    <form action="{{ route('notifications.mark-all-as-read') }}" method="POST">
+                                    <form action="{{ route('admin.notifications.mark-all-as-read') }}" method="POST">
                                         @csrf
                                         <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">
                                             <i class="fas fa-check-circle mr-1"></i> Mark all as read
                                         </button>
                                     </form>
-                                    <a href="{{ route('notifications.index') }}" class="block text-xs text-blue-600 hover:text-blue-800 mt-1">
+                                    <a href="{{ route('admin.notifications.index') }}" class="block text-xs text-blue-600 hover:text-blue-800 mt-1">
                                         <i class="fas fa-list mr-1"></i> View all notifications
                                     </a>
                                 </div>
@@ -242,42 +243,87 @@
 
             // Mark notification as read
             document.querySelectorAll('.mark-as-read').forEach(button => {
-                button.addEventListener('click', function(e) {
+                button.addEventListener('click', async function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
+
                     const notificationId = this.getAttribute('data-id');
+                    const url = `/admin/notifications/${notificationId}/mark-as-read`;  // Updated URL
 
-                    fetch(`/notifications/${notificationId}/mark-as-read`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Content-Type': 'application/json'
+                    try {
+                        // Show loading indicator
+                        const originalHtml = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Failed to mark as read');
                         }
-                    }).then(response => response.json())
-                      .then(data => {
-                          if (data.success) {
-                              // Update UI
-                              const notificationItem = this.closest('[data-notification-id]');
-                              notificationItem.classList.remove('bg-blue-50');
-                              notificationItem.querySelector('.bg-blue-500').classList.replace('bg-blue-500', 'bg-gray-300');
-                              this.remove();
 
-                              // Update badge count
-                              const badge = document.querySelector('.notification-badge');
-                              if (badge) {
-                                  const newCount = parseInt(badge.textContent) - 1;
-                                  if (newCount > 0) {
-                                      badge.textContent = newCount;
-                                  } else {
-                                      badge.remove();
-                                  }
-                              }
-                          }
-                      });
+                        if (data.success) {
+                            // Update the UI
+                            const notificationElement = this.closest('[data-notification-id]');
+                            notificationElement.classList.remove('bg-blue-50');
+
+                            // Update the unread indicator
+                            const dot = notificationElement.querySelector('.bg-blue-500');
+                            if (dot) {
+                                dot.classList.replace('bg-blue-500', 'bg-gray-300');
+                            }
+
+                            // Remove the mark-as-read button
+                            this.remove();
+
+                            // Update the notification badge count
+                            const badge = document.querySelector('.notification-badge');
+                            if (badge) {
+                                const currentCount = parseInt(badge.textContent);
+                                if (currentCount > 1) {
+                                    badge.textContent = currentCount - 1;
+                                } else {
+                                    badge.remove();
+                                }
+                            }
+
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Notification marked as read',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            throw new Error(data.message || 'Operation failed');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to mark notification as read'
+                        });
+
+                        // Restore button state
+                        this.innerHTML = originalHtml;
+                    }
                 });
             });
 
             // Mark all as read
-            const markAllForm = document.querySelector('form[action="{{ route('notifications.mark-all-as-read') }}"]');
+            const markAllForm = document.querySelector('form[action="{{ route('admin.notifications.mark-all-as-read') }}"]');
             if (markAllForm) {
                 markAllForm.addEventListener('submit', function(e) {
                     e.preventDefault();

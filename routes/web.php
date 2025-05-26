@@ -67,10 +67,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     // Notification Routes
     Route::prefix('notifications')->group(function () {
-        Route::get('/', [NotificationsController::class, 'index'])->name('notifications.index');
-        Route::post('/{notification}/mark-as-read', [NotificationsController::class, 'markAsRead'])->name('notifications.mark-as-read');
-        Route::post('/mark-all-as-read', [NotificationsController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
-        Route::delete('/{notification}', [NotificationsController::class, 'destroy'])->name('notifications.destroy');
+        Route::get('/', [NotificationsController::class, 'index'])->name('admin.notifications.index');
+        Route::post('/{notification}/mark-as-read', [NotificationsController::class, 'markAsRead'])->name('admin.notifications.mark-as-read');
+        Route::post('/mark-all-as-read', [NotificationsController::class, 'markAllAsRead'])->name('admin.notifications.mark-all-as-read');
+        Route::delete('/{notification}', [NotificationsController::class, 'destroy'])->name('admin.notifications.destroy');
     });
 });
 
@@ -105,9 +105,6 @@ Route::middleware(['auth', 'role:admin,magasin'])->group(function () {
     Route::get('sales/report', [SalesController::class, 'report'])->name('sales.report');
 
 
-    Route::get('/invoices', [InvoicesController::class, 'index'])->name('invoices.index');
-    Route::get('/invoices/{sale}', [InvoicesController::class, 'show'])->name('invoices.show');
-    Route::get('/invoices/{sale}/download', [InvoicesController::class, 'download'])->name('invoices.download');
 
     // Delivery Documents accessible to both admin and magasin
     Route::prefix('documents')->group(function () {

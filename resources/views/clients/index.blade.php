@@ -87,13 +87,9 @@
                                     <a href="{{ route('clients.edit', $client->id) }}" class="text-blue-600 hover:text-blue-900">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('clients.destroy', $client->id) }}" method="POST" class="inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="showDeleteModal('{{ $client->id }}', '{{ $client->name }}')" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -108,21 +104,35 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Confirmer la suppression</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Êtes-vous sûr de vouloir supprimer <span id="clientName" class="font-semibold"></span> ? Cette action est irréversible.</p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <form id="deleteForm" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Supprimer
+                    </button>
+                    <button type="button" onclick="hideDeleteModal()" class="ml-3 px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Annuler
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Delete form handling
-    const deleteForms = document.querySelectorAll('.delete-form');
-    if (deleteForms) {
-        deleteForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce client?')) {
-                    form.submit();
-                }
-            });
-        });
-    }
-
     // Live Search Implementation
     const searchInput = document.getElementById('searchInput');
     const tableBody = document.getElementById('clientsTableBody');
@@ -182,6 +192,29 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.value = '';
         filterTable();
         history.replaceState({}, '', window.location.pathname);
+    };
+
+    // Delete Modal Functions
+    window.showDeleteModal = function(clientId, clientName) {
+        const modal = document.getElementById('deleteModal');
+        const form = document.getElementById('deleteForm');
+        const nameSpan = document.getElementById('clientName');
+
+        nameSpan.textContent = clientName;
+        form.action = `/clients/${clientId}`;
+        modal.classList.remove('hidden');
+    };
+
+    window.hideDeleteModal = function() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    };
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('deleteModal');
+        if (event.target == modal) {
+            hideDeleteModal();
+        }
     };
 });
 </script>

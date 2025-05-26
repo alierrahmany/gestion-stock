@@ -13,8 +13,8 @@ class Purchase extends Model
         'product_id',
         'supplier_id',
         'quantity',
-        'price',    // Changed from buy_price to price
-        'date',     // Changed from purchase_date to date
+        'price',    
+        'date',
         'reference'
     ];
 
@@ -33,9 +33,7 @@ class Purchase extends Model
 
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class)->withDefault([
-            'name' => 'Unknown Supplier'
-        ]);
+        return $this->belongsTo(Supplier::class);
     }
 
     public function getFormattedDateAttribute()

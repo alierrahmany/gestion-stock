@@ -36,21 +36,56 @@ class NotificationsController extends Controller
     }
 
     public function markAsRead(Notification $notification)
-    {
-        // Authorization check
-        if (Auth::user()->role !== 'admin' && $notification->user_id !== Auth::id()) {
-            abort(403);
+{
+    // Debugging: Log the incoming request
+    \Log::info('MarkAsRead request:', [
+        'notification_id' => $notification->id,
+        'user_id' => auth()->id(),
+        'notification_user_id' => $notification->user_id
+    ]);
+
+    // Authorization check
+    if (auth()->user()->role !== 'admin' && $notification->user_id !== auth()->id()) {
+        \Log::warning('Unauthorized attempt to mark notification as read', [
+            'user_id' => auth()->id(),
+            'notification_id' => $notification->id
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized action'
+        ], 403);
+    }
+
+    try {
+        $updated = $notification->update(['read' => true]);
+
+        if (!$updated) {
+            throw new \Exception('Failed to update notification in database');
         }
 
-        $notification->update(['read' => true]);
+        \Log::info('Notification marked as read successfully', [
+            'notification_id' => $notification->id
+        ]);
 
         return response()->json([
             'success' => true,
-            'unread_count' => Auth::user()->role === 'admin'
+            'unread_count' => auth()->user()->role === 'admin'
                 ? Notification::where('read', false)->count()
-                : Auth::user()->notifications()->unread()->count()
+                : auth()->user()->notifications()->unread()->count()
         ]);
+    } catch (\Exception $e) {
+        \Log::error('Failed to mark notification as read: ' . $e->getMessage(), [
+            'notification_id' => $notification->id,
+            'error' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update notification: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function markAllAsRead()
     {

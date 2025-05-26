@@ -4,36 +4,57 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class SuppliersSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
-        // Disable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $majorBrands = [
+            'Logitech', 'Microsoft', 'Dell', 'HP', 'Lenovo', 
+            'Samsung', 'LG', 'Asus', 'Acer', 'Razer', 
+            'Corsair', 'SteelSeries', 'Anker', 'Belkin',
+            'TP-Link', 'Ubiquiti', 'Western Digital', 'Seagate', 'APC', 'Tripp Lite'
+        ];
 
-        // Clear tables in correct order
-        DB::table('products')->truncate();
-        DB::table('suppliers')->truncate();
+        foreach ($majorBrands as $brand) {
+            DB::table('suppliers')->insert([
+                'name' => $brand . ' Technologies Inc.',
+                'email' => strtolower($brand) . '@example.com',
+                'contact' => '+1 ' . rand(200, 999) . '-' . rand(200, 999) . '-' . rand(1000, 9999),
+                'address' => $this->generateAddress(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        for ($i = 1; $i <= 30; $i++) {
+            DB::table('suppliers')->insert([
+                'name' => 'IT Supplier ' . $i . ' LLC',
+                'email' => 'supplier' . $i . '@example.com',
+                'contact' => '+1 ' . rand(200, 999) . '-' . rand(200, 999) . '-' . rand(1000, 9999),
+                'address' => $this->generateAddress(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         DB::table('suppliers')->insert([
-            ['name' => 'TechSupply', 'email' => 'contact@techsupply.com', 'contact' => '0123456789', 'address' => '123 Tech Street', 'created_at' => now()],
-            ['name' => 'CompuWorld', 'email' => 'info@compuworld.com', 'contact' => '0987654321', 'address' => '45 Silicon Blvd', 'created_at' => now()],
-            ['name' => 'ElectroZone', 'email' => 'sales@electrozone.com', 'contact' => '0678123456', 'address' => '67 Market Ave', 'created_at' => now()],
-            ['name' => 'HardNet', 'email' => 'support@hardnet.com', 'contact' => '0611223344', 'address' => '89 Components Rd', 'created_at' => now()],
-            ['name' => 'Digitech', 'email' => 'orders@digitech.com', 'contact' => '0633445566', 'address' => '9G Gadget Zone', 'created_at' => now()],
-            ['name' => 'MegaByte', 'email' => 'hello@megabyte.com', 'contact' => '0655778899', 'address' => '1 Byte Park', 'created_at' => now()],
-            ['name' => 'PC Express', 'email' => 'contact@pcexpress.com', 'contact' => '0700112233', 'address' => '100 Desktop St', 'created_at' => now()],
-            ['name' => 'OfficeTech', 'email' => 'sales@officetech.com', 'contact' => '0778899001', 'address' => '21 Printer Ln', 'created_at' => now()],
-            ['name' => 'CableNet', 'email' => 'info@cablenet.com', 'contact' => '0667788990', 'address' => '333 Wire Street', 'created_at' => now()],
-            ['name' => 'GlobalIT', 'email' => 'sales@globalit.com', 'contact' => '0556677889', 'address' => '55 Global Park', 'created_at' => now()],
+            'name' => 'Direct Imports Ltd',
+            'email' => 'imports@example.com',
+            'contact' => null,
+            'address' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
+    }
+
+    private function generateAddress()
+    {
+        $streets = ['Main', 'First', 'Second', 'Third', 'Fourth', 'Park', 'Fifth', 'Oak', 'Pine', 'Maple'];
+        $cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
+        
+        return rand(100, 999) . ' ' . $streets[array_rand($streets)] . ' St, ' . 
+               $cities[array_rand($cities)] . ', ' . 
+               strtoupper(fake()->lexify('??')) . ' ' . rand(10000, 99999);
     }
 }

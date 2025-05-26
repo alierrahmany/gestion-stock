@@ -13,13 +13,13 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="bg-white shadow rounded-lg">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">Edit Supplier</h3>
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Modifier le fournisseur</h3>
                 <form action="{{ route('suppliers.update', $supplier) }}" method="POST" class="mt-5">
                     @csrf
                     @method('PUT')
                     <div class="grid grid-cols-6 gap-6">
                         <div class="col-span-6 sm:col-span-3">
-                            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                            <label for="name" class="block text-sm font-medium text-gray-700">Nom</label>
                             <input type="text" name="name" id="name" value="{{ old('name', $supplier->name) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             @error('name')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
                         </div>
@@ -31,20 +31,23 @@
                         </div>
 
                         <div class="col-span-6 sm:col-span-3">
-                            <label for="contact" class="block text-sm font-medium text-gray-700">Contact</label>
+                            <label for="contact" class="block text-sm font-medium text-gray-700">Téléphone</label>
                             <input type="text" name="contact" id="contact" value="{{ old('contact', $supplier->contact) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             @error('contact')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
                         </div>
 
                         <div class="col-span-6">
-                            <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                            <label for="address" class="block text-sm font-medium text-gray-700">Adresse</label>
                             <textarea name="address" id="address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">{{ old('address', $supplier->address) }}</textarea>
                             @error('address')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
                         </div>
                     </div>
-                    <div class="mt-4 flex justify-end">
+                    <div class="mt-4 flex justify-end space-x-3">
+                        <a href="{{ route('suppliers.index') }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Annuler
+                        </a>
                         <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                            Update Supplier
+                            Mettre à jour le fournisseur
                         </button>
                     </div>
                 </form>

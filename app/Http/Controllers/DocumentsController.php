@@ -14,74 +14,108 @@ class DocumentsController extends Controller
         return view('documents.index');
     }
 
-    public function sales()
+    public function sales(Request $request)
     {
-        $sales = Sale::with(['product', 'client'])->latest()->paginate(10);
-        return view('documents.sales', compact('sales'));
+        $query = Sale::with(['product', 'client'])->latest();
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->date_to);
+        }
+
+        $sales = $query->paginate(10);
+
+        return view('documents.sales', [
+            'sales' => $sales,
+            'date_from' => $request->date_from,
+            'date_to' => $request->date_to,
+        ]);
     }
 
-    public function purchases()
+
+    public function purchases(Request $request)
     {
-        $purchases = Purchase::with(['product', 'supplier'])->latest()->paginate(10);
+        $query = Purchase::with(['supplier', 'product']);
+
+        // Apply date range filters if provided
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        // Paginate the results
+        $purchases = $query->orderBy('date', 'desc')->paginate(10);
+
         return view('documents.purchases', compact('purchases'));
     }
 
     public function downloadDeliveryNote(Sale $sale)
     {
         $pdf = Pdf::loadView('documents.pdf.delivery-note', compact('sale'));
-        return $pdf->download('delivery-note-'.$sale->id.'.pdf');
+        return $pdf->download('delivery-note-' . $sale->id . '.pdf');
     }
 
     public function downloadPurchaseOrder(Purchase $purchase)
     {
         $pdf = Pdf::loadView('documents.pdf.purchase-order', compact('purchase'));
-        return $pdf->download('purchase-order-'.$purchase->id.'.pdf');
+        return $pdf->download('purchase-order-' . $purchase->id . '.pdf');
     }
 
     public function printAllSales(Request $request)
     {
         $query = Sale::with(['product', 'client']);
-    
+
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->date_from);
         }
-    
+
         if ($request->filled('date_to')) {
             $query->whereDate('date', '<=', $request->date_to);
         }
-    
+
         $sales = $query->latest()->get();
-    
+
         $pdf = Pdf::loadView('documents.pdf.all-sales', [
             'sales' => $sales,
             'date_from' => $request->date_from,
             'date_to' => $request->date_to
         ]);
-    
-        return $pdf->download('all-delivery-notes-'.now()->format('Y-m-d').'.pdf');
+
+        return $pdf->download('Bons-de-Livraison.pdf' . now()->format('Y-m-d') . '.pdf');
     }
-    
+
     public function printAllPurchases(Request $request)
     {
-        $query = Purchase::with(['product', 'supplier']);
-    
+        $query = Purchase::with(['supplier', 'product']);
+
+        // Apply the same filters as the index page
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->date_from);
         }
-    
         if ($request->filled('date_to')) {
             $query->whereDate('date', '<=', $request->date_to);
         }
-    
-        $purchases = $query->latest()->get();
-    
-        $pdf = Pdf::loadView('documents.pdf.all-purchases', [
+        if ($request->filled('supplier')) {
+            $query->where('supplier_id', $request->supplier);
+        }
+        if ($request->filled('product')) {
+            $query->where('product_id', $request->product);
+        }
+
+        $purchases = $query->orderBy('date', 'desc')->get();
+
+        $pdf = PDF::loadView('documents.pdf.all-purchases', [
             'purchases' => $purchases,
             'date_from' => $request->date_from,
-            'date_to' => $request->date_to
+            'date_to' => $request->date_to,
         ]);
-    
-        return $pdf->download('all-purchase-orders-'.now()->format('Y-m-d').'.pdf');
-    }
 
+        return $pdf->download('bons-achats-' . now()->format('Y-m-d') . '.pdf');
+    }
 }

@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Sale;
-use App\Models\Product;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -11,25 +9,46 @@ class SalesSeeder extends Seeder
 {
     public function run()
     {
-        // Get actual product IDs from the database
-        $productIds = Product::pluck('id')->toArray();
+        $products = DB::table('products')->get();
+        $clients = DB::table('clients')->pluck('id')->toArray();
 
-        if (empty($productIds)) {
-            echo "No products found in database. Please run ProductsSeeder first.\n";
-            return;
+        foreach ($products as $product) {
+            $purchase = DB::table('purchases')
+                         ->where('product_id', $product->id)
+                         ->first();
+            
+            $unitCost = $purchase ? ($purchase->price / $purchase->quantity) : $this->estimateUnitCost($product->categorie_id);
+            
+            for ($i = 0; $i < rand(1, 3); $i++) {
+                $quantity = rand(10, 500);
+                $margin = rand(15, 30) / 100;
+                $discount = $quantity > 100 ? 0.95 : 1.0;
+                $discount = $quantity > 300 ? 0.90 : $discount;
+                
+                DB::table('sales')->insert([
+                    'product_id' => $product->id,
+                    'client_id' => $clients[array_rand($clients)],
+                    'quantity' => $quantity,
+                    'price' => ($unitCost * (1 + $margin) * $discount) * $quantity,
+                    'date' => now()->subDays(rand(1, 365)),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
+    }
 
-        DB::table('sales')->insert([
-            ['product_id' => 1, 'client_id' => 1, 'quantity' => 2, 'price' => 950.00, 'date' => '2025-04-11', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 2, 'client_id' => 2, 'quantity' => 1, 'price' => 120.00, 'date' => '2025-04-11', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 3, 'client_id' => 3, 'quantity' => 2, 'price' => 100.00, 'date' => '2025-04-12', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 4, 'client_id' => 4, 'quantity' => 1, 'price' => 550.00, 'date' => '2025-04-13', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 5, 'client_id' => 5, 'quantity' => 1, 'price' => 280.00, 'date' => '2025-04-13', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 6, 'client_id' => 6, 'quantity' => 2, 'price' => 160.00, 'date' => '2025-04-14', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 7, 'client_id' => 7, 'quantity' => 3, 'price' => 110.00, 'date' => '2025-04-14', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 8, 'client_id' => 8, 'quantity' => 4, 'price' => 12.00, 'date' => '2025-04-15', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 9, 'client_id' => 9, 'quantity' => 1, 'price' => 75.00, 'date' => '2025-04-15', 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => 10, 'client_id' => 10, 'quantity' => 1, 'price' => 85.00, 'date' => '2025-04-16', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+    private function estimateUnitCost($categoryId)
+    {
+        $category = DB::table('categories')->where('id', $categoryId)->first()->name;
+        
+        switch($category) {
+            case 'Keyboards': return rand(25, 250) / 100;
+            case 'Mice': return rand(20, 180) / 100;
+            case 'Monitors': return rand(200, 2000) / 100;
+            case 'Headsets': return rand(60, 350) / 100;
+            case 'Webcams': return rand(50, 250) / 100;
+            default: return rand(15, 600) / 100;
+        }
     }
 }

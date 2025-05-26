@@ -66,28 +66,53 @@ class SalesController extends Controller
 
             if ($availableStock < $validated['quantity']) {
                 return back()->withInput()
-                            ->with('error', 'Insufficient stock. Available: ' . $availableStock);
+                            ->with('error', 'Stock insuffisant. Disponible: ' . $availableStock);
             }
 
             // Create the sale
-            $sale= Sale::create($validated);
+            $sale = Sale::create($validated);
 
+            // Get related models for notification
+            $product = Product::find($validated['product_id']);
+            $client = Client::find($validated['client_id']);
+
+            // Create detailed notification in French
             Notification::create([
                 'user_id' => Auth::id(),
                 'action_user_id' => Auth::id(),
-                'message' => 'Sale #' . $sale->id . ' created for ' . $sale->client->name,
+                'message' => sprintf(
+                    "Nouvelle vente créée (ID: %d)\nClient: %s\nProduit: %s\nQuantité: %d\nPrix: %.2f\nDate: %s",
+                    $sale->id,
+                    $client->name,
+                    $product->name,
+                    $validated['quantity'],
+                    $validated['price'],
+                    $validated['date']
+                ),
                 'read' => false,
-                'type' => 'sale'
+                'type' => 'sale',
+                'data' => json_encode([
+                    'sale_id' => $sale->id,
+                    'action' => 'created',
+                    'details' => [
+                        'client' => $client->name,
+                        'product' => $product->name,
+                        'quantity' => $validated['quantity'],
+                        'price' => $validated['price'],
+                        'date' => $validated['date'],
+                        'total_amount' => $validated['quantity'] * $validated['price']
+                    ]
+                ])
             ]);
 
             DB::commit();
             return redirect()->route('sales.index')
-                            ->with('success', 'Sale created successfully!');
+                            ->with('success', 'Vente créée avec succès!');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()
-                        ->with('error', 'Error: ' . $e->getMessage());
+                        ->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
 
@@ -119,6 +144,16 @@ class SalesController extends Controller
 
         DB::beginTransaction();
         try {
+            // Store original values before update
+            $originalValues = [
+                'client' => $sale->client->name,
+                'product' => $sale->product->name,
+                'quantity' => $sale->quantity,
+                'price' => $sale->price,
+                'date' => $sale->date,
+                'total_amount' => $sale->quantity * $sale->price
+            ];
+
             $quantityDiff = $validated['quantity'] - $sale->quantity;
 
             if ($quantityDiff > 0) { // If increasing quantity
@@ -130,28 +165,119 @@ class SalesController extends Controller
 
                 if ($quantityDiff > $availableStock) {
                     return back()->withInput()
-                                ->with('error', 'Insufficient stock for this increase. Available: ' . $availableStock);
+                                ->with('error', 'Stock insuffisant pour cette augmentation. Disponible: ' . $availableStock);
                 }
             }
 
             $sale->update($validated);
 
+            // Get new values after update
+            $newClient = Client::find($validated['client_id']);
+            $newProduct = Product::find($validated['product_id']);
+
+            // Prepare detailed change description in French
+            $changeDetails = [];
+
+            if ($originalValues['client'] !== $newClient->name) {
+                $changeDetails[] = sprintf(
+                    "Client changé de '%s' à '%s'",
+                    $originalValues['client'],
+                    $newClient->name
+                );
+            }
+
+            if ($originalValues['product'] !== $newProduct->name) {
+                $changeDetails[] = sprintf(
+                    "Produit changé de '%s' à '%s'",
+                    $originalValues['product'],
+                    $newProduct->name
+                );
+            }
+
+            if ($originalValues['quantity'] != $validated['quantity']) {
+                $changeDetails[] = sprintf(
+                    "Quantité changée de %d à %d (différence: %+d)",
+                    $originalValues['quantity'],
+                    $validated['quantity'],
+                    $quantityDiff
+                );
+            }
+
+            if ($originalValues['price'] != $validated['price']) {
+                $changeDetails[] = sprintf(
+                    "Prix changé de %.2f à %.2f",
+                    $originalValues['price'],
+                    $validated['price']
+                );
+            }
+
+            if ($originalValues['date'] != $validated['date']) {
+                $changeDetails[] = sprintf(
+                    "Date changée de %s à %s",
+                    $originalValues['date'],
+                    $validated['date']
+                );
+            }
+
+            // Calculate total amount difference
+            $newTotalAmount = $validated['quantity'] * $validated['price'];
+            if ($originalValues['total_amount'] != $newTotalAmount) {
+                $changeDetails[] = sprintf(
+                    "Montant total changé de %.2f à %.2f",
+                    $originalValues['total_amount'],
+                    $newTotalAmount
+                );
+            }
+
+            // Create detailed notification in French
             Notification::create([
                 'user_id' => Auth::id(),
                 'action_user_id' => Auth::id(),
-                'message' => 'Sale #' . $sale->id . ' Updated for ' . $sale->client->name,
+                'message' => "Vente #" . $sale->id . " mise à jour :\n" . implode("\n", $changeDetails),
                 'read' => false,
-                'type' => 'sale'
+                'type' => 'sale',
+                'data' => json_encode([
+                    'sale_id' => $sale->id,
+                    'action' => 'updated',
+                    'changes' => [
+                        'client' => [
+                            'from' => $originalValues['client'],
+                            'to' => $newClient->name
+                        ],
+                        'product' => [
+                            'from' => $originalValues['product'],
+                            'to' => $newProduct->name
+                        ],
+                        'quantity' => [
+                            'from' => $originalValues['quantity'],
+                            'to' => $validated['quantity'],
+                            'difference' => $quantityDiff
+                        ],
+                        'price' => [
+                            'from' => $originalValues['price'],
+                            'to' => $validated['price']
+                        ],
+                        'date' => [
+                            'from' => $originalValues['date'],
+                            'to' => $validated['date']
+                        ],
+                        'total_amount' => [
+                            'from' => $originalValues['total_amount'],
+                            'to' => $newTotalAmount
+                        ]
+                    ],
+                    'updated_at' => now()->toDateTimeString()
+                ])
             ]);
 
             DB::commit();
             return redirect()->route('sales.index')
-                            ->with('success', 'Sale updated successfully!');
+                            ->with('success', 'Vente mise à jour avec succès!');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()
-                        ->with('error', 'Error: ' . $e->getMessage());
+                        ->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
 
@@ -159,21 +285,48 @@ class SalesController extends Controller
     {
         DB::beginTransaction();
         try {
+            // Store sale details before deletion
+            $saleDetails = [
+                'id' => $sale->id,
+                'client' => $sale->client->name,
+                'product' => $sale->product->name,
+                'quantity' => $sale->quantity,
+                'price' => $sale->price,
+                'date' => $sale->date,
+                'total_amount' => $sale->quantity * $sale->price
+            ];
+
             $sale->delete();
 
+            // Create detailed deletion notification in French
             Notification::create([
                 'user_id' => Auth::id(),
                 'action_user_id' => Auth::id(),
-                'message' => 'Sale #' . $sale->id . ' Deleted for ' . $sale->client->name,
+                'message' => sprintf(
+                    "Vente supprimée (ID: %d)\nClient: %s\nProduit: %s\nQuantité: %d\nPrix: %.2f\nDate: %s\nMontant total: %.2f",
+                    $saleDetails['id'],
+                    $saleDetails['client'],
+                    $saleDetails['product'],
+                    $saleDetails['quantity'],
+                    $saleDetails['price'],
+                    $saleDetails['date'],
+                    $saleDetails['total_amount']
+                ),
                 'read' => false,
-                'type' => 'sale'
+                'type' => 'sale',
+                'data' => json_encode([
+                    'action' => 'deleted',
+                    'deleted_sale' => $saleDetails,
+                    'deleted_at' => now()->toDateTimeString()
+                ])
             ]);
+
             DB::commit();
             return redirect()->route('sales.index')
-                            ->with('success', 'Sale deleted successfully!');
+                            ->with('success', 'Vente supprimée avec succès!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
 

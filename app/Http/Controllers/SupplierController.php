@@ -9,18 +9,17 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Supplier::query();
+        $query = Supplier::withoutTrashed(); // Only show non-deleted records
 
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%")
-                  ->orWhere('contact', 'LIKE', "%{$search}%");
+                ->orWhere('email', 'LIKE', "%{$search}%")
+                ->orWhere('contact', 'LIKE', "%{$search}%");
         }
 
         $suppliers = $query->latest()->paginate(10);
-        $title = 'Liste des Fournisseurs';
-        return view('suppliers.index', compact('suppliers', 'title'));
+        return view('suppliers.index', compact('suppliers'));
     }
 
     public function show(Supplier $supplier)
@@ -70,7 +69,7 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        $supplier->delete();
-        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully');
+        $supplier->forceDelete(); // Bypasses soft delete and permanently removes
+        return redirect()->route('suppliers.index')->with('success', 'Supplier permanently deleted');
     }
 }
