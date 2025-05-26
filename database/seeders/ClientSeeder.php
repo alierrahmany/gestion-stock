@@ -9,13 +9,13 @@ class ClientSeeder extends Seeder
 {
     public function run()
     {
-        $industries = ['IT Services', 'Software Development', 'Finance', 'Healthcare', 'Education', 'Government', 'Retail', 'Manufacturing'];
+        $industries = ['Services IT', 'Développement Logiciel', 'Finance', 'Santé', 'Éducation', 'Gouvernement', 'Commerce', 'Industrie'];
 
         for ($i = 1; $i <= 40; $i++) {
             DB::table('clients')->insert([
                 'name' => $this->generateCompanyName($industries[array_rand($industries)]),
-                'email' => 'client' . $i . '@example.com',
-                'contact' => '+1 ' . rand(200, 999) . '-' . rand(200, 999) . '-' . rand(1000, 9999),
+                'email' => 'client' . $i . '@exemple.com',
+                'contact' => '+33 ' . rand(1, 9) . rand(10, 99) . rand(10, 99) . rand(10, 99) . rand(10, 99),
                 'address' => $this->generateAddress(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -23,8 +23,8 @@ class ClientSeeder extends Seeder
         }
 
         DB::table('clients')->insert([
-            'name' => 'Minimal Info Client Corp',
-            'email' => 'minimal@example.com',
+            'name' => 'Société Client Info Minimale',
+            'email' => 'minimal@exemple.com',
             'contact' => null,
             'address' => null,
             'created_at' => now(),
@@ -34,19 +34,19 @@ class ClientSeeder extends Seeder
 
     private function generateCompanyName($industry)
     {
-        $prefixes = ['Global', 'National', 'Elite', 'Premium', 'First', 'Advanced', 'Professional'];
-        $suffixes = ['Solutions', 'Technologies', 'Systems', 'Services', 'Consulting', 'Group'];
-        
+        $prefixes = ['Global', 'National', 'Elite', 'Premium', 'Premier', 'Avancé', 'Professionnel'];
+        $suffixes = ['Solutions', 'Technologies', 'Systèmes', 'Services', 'Consulting', 'Groupe'];
+
         return $prefixes[array_rand($prefixes)] . ' ' . $industry . ' ' . $suffixes[array_rand($suffixes)];
     }
 
     private function generateAddress()
     {
-        $streets = ['Main', 'First', 'Second', 'Third', 'Fourth', 'Park', 'Fifth', 'Oak', 'Pine', 'Maple'];
-        $cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
-        
-        return rand(100, 999) . ' ' . $streets[array_rand($streets)] . ' St, ' . 
-               $cities[array_rand($cities)] . ', ' . 
-               strtoupper(fake()->lexify('??')) . ' ' . rand(10000, 99999);
+        $streets = ['Principal', 'Première', 'Deuxième', 'Troisième', 'Quatrième', 'Parc', 'Cinquième', 'Chêne', 'Pin', 'Érable'];
+        $cities = ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille'];
+
+        return rand(1, 999) . ' ' . $streets[array_rand($streets)] . ', ' .
+               $cities[array_rand($cities)] . ', ' .
+               rand(10000, 99999) . ' ' . $cities[array_rand($cities)];
     }
 }

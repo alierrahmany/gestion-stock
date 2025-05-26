@@ -23,7 +23,7 @@ class UsersSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'admin',
             'status' => 1,
-            'image' => '1746754592.jpg',
+            'image' => '1748120233.jpg',
             'remember_token' => Str::random(10),
             'email_verified_at' => now(),
             'last_login' => now(),

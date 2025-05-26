@@ -16,15 +16,15 @@ class SalesSeeder extends Seeder
             $purchase = DB::table('purchases')
                          ->where('product_id', $product->id)
                          ->first();
-            
+
             $unitCost = $purchase ? ($purchase->price / $purchase->quantity) : $this->estimateUnitCost($product->categorie_id);
-            
+
             for ($i = 0; $i < rand(1, 3); $i++) {
                 $quantity = rand(10, 500);
                 $margin = rand(15, 30) / 100;
                 $discount = $quantity > 100 ? 0.95 : 1.0;
                 $discount = $quantity > 300 ? 0.90 : $discount;
-                
+
                 DB::table('sales')->insert([
                     'product_id' => $product->id,
                     'client_id' => $clients[array_rand($clients)],
@@ -41,12 +41,12 @@ class SalesSeeder extends Seeder
     private function estimateUnitCost($categoryId)
     {
         $category = DB::table('categories')->where('id', $categoryId)->first()->name;
-        
+
         switch($category) {
-            case 'Keyboards': return rand(25, 250) / 100;
-            case 'Mice': return rand(20, 180) / 100;
-            case 'Monitors': return rand(200, 2000) / 100;
-            case 'Headsets': return rand(60, 350) / 100;
+            case 'Claviers': return rand(25, 250) / 100;
+            case 'Souris': return rand(20, 180) / 100;
+            case 'Écrans': return rand(200, 2000) / 100;
+            case 'Casques': return rand(60, 350) / 100;
             case 'Webcams': return rand(50, 250) / 100;
             default: return rand(15, 600) / 100;
         }
