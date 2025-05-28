@@ -17,6 +17,9 @@ use App\Http\Controllers\InvoicesController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\DocumentsController;
 use App\Http\Controllers\ClientController;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+
 
 // Redirect to login
 Route::get('/', fn() => redirect()->route('login'));
@@ -25,6 +28,12 @@ Route::get('/', fn() => redirect()->route('login'));
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+    // Password Reset Routes
+    // Password Reset Routes
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.update');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -127,4 +136,24 @@ Route::middleware(['auth', 'role:admin,gestionnaire,magasin'])->group(function (
     Route::resource('products', ProductsController::class)->names([
         'index'   => 'products.index'
     ]);
+});
+
+Route::get('/test-email', function () {
+    $validEmails = [
+        'youssefefkiren@gmail.com',  // Primary test
+    ];
+
+    foreach ($validEmails as $email) {
+        try {
+            Mail::raw("Test réussi à " . now(), function ($m) use ($email) {
+                $m->to($email)
+                    ->subject('Test Stockino ' . now()->format('H:i:s'));
+            });
+            Log::info("Email sent to {$email}");
+        } catch (\Exception $e) {
+            Log::error("Failed to send to {$email}: " . $e->getMessage());
+        }
+    }
+
+    return "Tests envoyés à " . count($validEmails) . " adresses. Vérifiez vos boîtes de réception.";
 });

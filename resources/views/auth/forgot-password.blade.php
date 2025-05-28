@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Connexion | Gestion de Stock</title>
+    <title>Réinitialisation mot de passe | Gestion de Stock</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
 
@@ -47,18 +47,24 @@
             <div class="bg-gradient-to-r from-primary-600 to-primary-800 p-6 text-center">
                 <div class="flex justify-center mb-3">
                     <div class="bg-white/20 p-3 rounded-full">
-                        <i class="fas fa-box-open text-white text-2xl"></i>
+                        <i class="fas fa-key text-white text-2xl"></i>
                     </div>
                 </div>
-                <h2 class="text-2xl font-bold text-white">Bienvenue</h2>
-                <p class="text-primary-100 mt-1">Connectez-vous à votre compte Gestion de Stock</p>
+                <h2 class="text-2xl font-bold text-white">Réinitialisation du mot de passe</h2>
+                <p class="text-primary-100 mt-1">Entrez votre email pour recevoir un lien de réinitialisation</p>
             </div>
 
             <!-- Form section -->
             <div class="p-6 sm:p-8">
-                <form method="POST" action="{{ route('login') }}">
-                    @csrf
+                @if (session('status'))
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-5 text-sm flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i> {{ session('status') }}
+                    </div>
+                @endif
 
+                <form method="POST" action="{{ route('password.email') }}">
+                    @csrf
+                    
                     <!-- Email Input -->
                     <div class="mb-5">
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Adresse Email</label>
@@ -66,7 +72,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-envelope text-primary-500"></i>
                             </div>
-                            <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus
+                            <input id="email" type="email" name="email" value="{{ old('email') }}" required
                                    class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 text-sm transition-all outline-none"
                                    placeholder="votre@email.com">
                         </div>
@@ -77,67 +83,18 @@
                         @enderror
                     </div>
 
-                    <!-- Password Input -->
-                    <div class="mb-5">
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-primary-500"></i>
-                            </div>
-                            <input id="password" type="password" name="password" required autocomplete="current-password"
-                                   class="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 text-sm transition-all outline-none"
-                                   placeholder="••••••••">
-                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-700" id="togglePassword">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        @error('password')
-                            <div class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
-
-                    <!-- Remember Me & Forgot Password -->
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center">
-                            <input id="remember" name="remember" type="checkbox" {{ old('remember') ? 'checked' : '' }}
-                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                            <label for="remember" class="ml-2 block text-sm text-gray-700">Se souvenir de moi</label>
-                        </div>
-                        <div class="text-sm">
-                            <a href="{{ route('password.request') }}" class="font-medium text-primary-600 hover:text-primary-500">Mot de passe oublié ?</a>
-                        </div>
-                    </div>
-
                     <!-- Submit Button -->
                     <button type="submit" class="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                        <i class="fas fa-sign-in-alt mr-2"></i> Se connecter
+                        <i class="fas fa-paper-plane mr-2"></i> Envoyer le lien
                     </button>
                 </form>
 
                 <!-- Footer -->
                 <div class="mt-6 text-center text-sm text-gray-500">
-                    <p>Pas de compte ? <a href="#" class="font-medium text-primary-600 hover:text-primary-500">Contactez l'administrateur</a></p>
+                    <p>Vous vous souvenez de votre mot de passe? <a href="{{ route('login') }}" class="font-medium text-primary-600 hover:text-primary-500">Connectez-vous ici</a></p>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
-
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
-        });
-    </script>
 </body>
 </html>
